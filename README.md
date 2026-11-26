@@ -9,7 +9,9 @@ AIGC:
     ReservedCode2: uC4W7SiPQ4sDPt2h6aEJjlFH6LdxRGWbvyMrro+8eCmU114PhZcWKXrOgo51RBiA26w8bLeAysxq2s+pX1YjmqDaCSvtx4Yzl/KGLH4s1IPd7zs0XVXl24gygAhE+1j0ScHIUf/cZK9Ryp7pxtnWWS+8XGQNrY3X8cgBYeozdGSV2AbIEUZRuuDL7LM=
 ---
 
-# 面试听记（InterviewLiveNote）
+# 面试点评器（InterviewLiveNote）
+
+> 项目与仓库名沿用 `InterviewLiveNote`，程序名与安装包为「面试点评器」；源码目录里的启动脚本仍叫 `启动面试听记.bat`，均指同一软件。
 
 给别人答题时**实时听记 + 实时标记 + AI 点评**的本地工具。全程离线转写，录音来源是**电脑系统内录**（WASAPI Loopback），不需要麦克风、不需要虚拟声卡，电脑静音也能录。
 
@@ -17,7 +19,7 @@ AIGC:
 
 ## 一、启动
 
-双击桌面 **「面试听记」** 图标，或运行：
+安装版双击桌面 **「面试点评器」** 图标；源码版双击项目内的 `启动面试听记.bat`，或执行：
 
 ```
 <项目根目录>\启动面试听记.bat
@@ -121,21 +123,39 @@ AIGC:
 
 ```
 <项目根目录>\
-├─ 启动面试听记.bat        双击启动
-├─ server.py              Flask 服务（端口 7788）
+├─ 启动面试听记.bat        双击启动（源码运行）
+├─ 停止服务.bat            结束占用 7788 端口的服务进程
+├─ launcher.py            桌面外壳（pywebview 无边框窗口）与启动入口
+├─ server.py              Flask 服务（端口 7788）与全部业务接口
 ├─ asr_engine.py          系统内录采集 + VAD 断句 + SenseVoice 识别 + 标点
-├─ ai_client.py           OpenAI 兼容客户端（点评 / 逐句速评）
+├─ ai_client.py           OpenAI 兼容客户端（点评 / 逐句速评 / 流式返回）
 ├─ local_analyzer.py      本地量化诊断（不依赖 AI）
 ├─ paragraphizer.py       按段落切分与计时（停顿 / 篇幅 / 话题词三重规则）
-├─ static\                前端（index.html / style.css / app.js）
-├─ data\
+├─ corrector.py           口头禅、口误与重复表述校正
+├─ points_extract.py      参考要点抽取与覆盖比对
+├─ question_analyzer.py   题干题型识别与结构化
+├─ simplifier.py          文本简化
+├─ cert_util.py           手机端 HTTPS 自签证书
+├─ firewall_util.py       局域网放行（手机扫码访问）
+├─ log_util.py            日志与密钥脱敏
+├─ static\                前端（index.html / app.js / style.css；手机端 mobile.*、scan.html）
+├─ default_data\          内置题库与默认题型数据
+├─ _packaging\            打包脚本（interview_reviewer.spec / setup.iss / version_info.txt / app.ico）
+├─ LICENSES\              第三方许可证全文（Apache-2.0 / BSD-3-Clause / MIT / MPL-2.0 / AGPL-3.0 / 0BSD / Zlib）
+├─ THIRD_PARTY_NOTICES.md  第三方组件与分发合规声明
+├─ 使用文档.md             功能使用说明
+├─ CHANGELOG.md            版本变更记录
+├─ LICENSE                 本仓库原创源码的 MIT 许可证
+├─ requirements.txt        运行依赖
+├─ models\                离线模型（不入库，见「十七、离线模型」）
+├─ data\                  首次运行自动生成
 │  ├─ config.json         AI 配置
 │  ├─ bank\               题库
 │  └─ records\            存档（.md 给人看，.json 回看）
 └─ logs\                  运行日志
 ```
 
-技术栈：Python 3.13（便携版）+ pyaudiowpatch（WASAPI Loopback）+ sherpa-onnx（SenseVoice int8 离线中文识别 + Silero VAD）+ Flask + 原生前端。识别模型复用 `<模型目录>\` 下已装好的模型。
+技术栈：Python 3.13（便携版）+ pyaudiowpatch（WASAPI Loopback）+ sherpa-onnx（SenseVoice int8 离线中文识别 + Silero VAD）+ Flask + 原生前端。离线识别模型放在 `models\` 下，或用环境变量 `IR_MODEL_DIR` / `IR_VAD_MODEL` / `IR_PUNCT_MODEL` 指定（见「十七、离线模型」）。
 
 ---
 
