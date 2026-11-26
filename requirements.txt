@@ -1,0 +1,19 @@
+# 面试点评器 (InterviewLiveNote) 运行依赖
+# 作者：慕夕制作
+# 说明：仅列直接依赖，未锁定版本；离线识别模型与 VAD/标点模型不打入仓库，
+#      需另行放置（见 README「离线模型」一节）。
+
+flask
+werkzeug
+sherpa-onnx
+pyaudiowpatch
+numpy
+scipy
+requests
+cryptography
+qrcode
+python-docx
+pymupdf
+lxml
+pywebview
+pythonnet

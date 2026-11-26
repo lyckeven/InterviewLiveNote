@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#e8ecf3">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="mobile-web-app-capable" content="yes">
+<title>面试听记 · 手机端</title>
+<link rel="stylesheet" href="/static/mobile.css">
+<link rel="icon" href="data:,">
+</head>
+<body data-mode="phone">
+<div id="app">
+
+  <!-- ==================== 侧边栏 ==================== -->
+  <aside class="side" id="side">
+    <div class="side-brand">
+      <span class="logo">听</span>
+      <div class="brand-txt">
+        <b>面试听记</b>
+        <span id="brandSub">移动端 · 手机 / 平板</span>
+      </div>
+    </div>
+
+    <nav class="nav" id="nav">
+      <button type="button" class="nav-item on" data-nav="live"><span class="ico">听</span><span>听记</span><span class="nav-badge" id="badgeLive" hidden>0</span></button>
+      <button type="button" class="nav-item" data-nav="script"><span class="ico">稿</span><span>逐字稿</span><span class="nav-badge" id="badgeScript" hidden>0</span></button>
+      <button type="button" class="nav-item" data-nav="marks"><span class="ico">标</span><span>标记</span><span class="nav-badge" id="badgeMarks" hidden>0</span></button>
+      <button type="button" class="nav-item" data-nav="review"><span class="ico">评</span><span>点评</span></button>
+      <button type="button" class="nav-item" data-nav="plain"><span class="ico">简</span><span>精简</span></button>
+      <button type="button" class="nav-item" data-nav="students"><span class="ico">生</span><span>学生</span></button>
+      <button type="button" class="nav-item" data-nav="bank"><span class="ico">题</span><span>题库</span></button>
+      <button type="button" class="nav-item" data-nav="history"><span class="ico">史</span><span>历史</span></button>
+      <button type="button" class="nav-item" data-nav="settings"><span class="ico">设</span><span>设置</span></button>
+    </nav>
+
+    <div class="side-foot">
+      <div class="seg" id="modeSeg">
+        <button type="button" class="segbtn on" data-mode="phone">手机</button>
+        <button type="button" class="segbtn" data-mode="tablet">平板</button>
+      </div>
+      <div class="side-tip" id="sideTip">竖屏为抽屉式侧栏；平板模式侧栏常驻、听记页三栏（题库 / 逐字稿 / 点评）。</div>
+    </div>
+  </aside>
+
+  <div class="mask" id="mask"></div>
+
+  <!-- ==================== 主区 ==================== -->
+  <div class="main">
+
+    <header class="hdr">
+      <button type="button" class="icon-btn" id="btnMenu" aria-label="菜单">
+        <span class="bars-wrap"><span class="bars"></span></span>
+      </button>
+      <div class="hdr-mid">
+        <div class="hdr-t"><span id="hdrTitle">听记</span><span class="pill dim" id="pillSecure">检测中</span></div>
+        <div class="hdr-s" id="subLine">正在读取接入信息…</div>
+      </div>
+      <button type="button" class="icon-btn" id="btnMode"><span class="txt-sm" id="btnModeTxt">平板</span></button>
+      <button type="button" class="icon-btn" id="btnHelp"><span class="txt-sm">指引</span></button>
+    </header>
+
+    <div class="views">
+
+      <!-- ---------- 听记 ---------- -->
+      <section class="view on" id="view-live">
+        <div class="card">
+          <div class="card-hd"><span class="card-t">声音来源</span><span class="hint" id="sourceHint"></span></div>
+          <div class="source-grid" id="sourceGrid">
+            <button type="button" class="src-btn" data-src="pc_loopback"><span class="sb-t">电脑内录</span><span class="sb-s">系统声音</span></button>
+            <button type="button" class="src-btn" data-src="pc_mic"><span class="sb-t">电脑麦克风</span><span class="sb-s">电脑收音</span></button>
+            <button type="button" class="src-btn on" data-src="phone_mic"><span class="sb-t">手机麦克风</span><span class="sb-s">本机收音</span></button>
+          </div>
+          <div class="dev-row" id="devRow" hidden>
+            <span class="lbl">具体设备</span>
+            <select class="inp" id="deviceSel"></select>
+            <button type="button" class="mini" id="btnReloadDev">刷新</button>
+          </div>
+          <div class="alert" id="secAlert" hidden>
+            <div class="alert-t" id="secTitle">当前页面拿不到麦克风</div>
+            <div class="alert-b" id="secBody"></div>
+            <ol id="secSteps"></ol>
+            <div class="btn-row">
+              <button type="button" class="mini primary-m" id="btnOpenHttps">用 HTTPS 打开</button>
+              <button type="button" class="mini" id="btnCopyHttps">复制 HTTPS 地址</button>
+              <button type="button" class="mini" id="btnRetry">重新检测</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="ctxCard">
+          <div class="card-hd">
+            <span class="card-t">当前进行</span>
+            <span class="ctx-hdops">
+              <span class="hint" id="ctxHint">未开始</span>
+              <button type="button" class="mini mini-sm accent" id="btnCtxStu" aria-expanded="false" aria-controls="ctxStuPick">切换学生</button>
+            </span>
+          </div>
+          <div class="ctx-list">
+            <div class="ctx-row"><span class="ctx-k">学生</span><span class="ctx-v" id="ctxStudent">—</span></div>
+            <div class="ctx-row"><span class="ctx-k">题目</span><span class="ctx-v" id="ctxQuestion">—</span></div>
+            <div class="ctx-row"><span class="ctx-k">当前段</span><span class="ctx-v" id="ctxPara">—</span></div>
+          </div>
+          <div class="stu-pick" id="ctxStuPick" hidden></div>
+          <div class="ctx-last" id="ctxLast"><span class="k">最新</span>还没有逐字稿，开始后会在这里实时显示。</div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd"><span class="card-t">会话控制</span><span class="hint" id="srcBadge">手机麦克风</span></div>
+          <div class="ctrl-row">
+            <span class="clock" id="clock">00:00</span>
+            <span class="st-flag"><span class="dot" id="dot"></span><span class="txt" id="statText">未开始</span></span>
+          </div>
+          <div class="levelbar"><i id="barFill"></i></div>
+          <div class="stats" id="stats"></div>
+        </div>
+
+        <div class="live-grid">
+          <div class="live-col-main">
+            <div class="card">
+              <div class="card-hd">
+                <span class="card-t">实时逐字稿</span>
+                <span class="hint" id="scriptHint">点句子可加标记</span>
+              </div>
+              <div class="script" id="script"></div>
+              <div class="partial" id="partial" hidden><span id="partialText"></span><span class="caret"></span></div>
+              <div class="empty" id="empty">点下方「<b>开始听记</b>」开始记录面试<br>逐字稿会实时滚动显示，点任意句子即可标记</div>
+            </div>
+          </div>
+          <div class="live-col-side">
+            <div class="card">
+              <div class="card-hd"><span class="card-t" id="panelTitle">整场点评</span><span class="hint" id="panelMode"></span></div>
+              <div class="panel-body rich" id="panelBody"></div>
+              <div class="empty" id="panelEmpty" style="padding:10px 4px">还没有点评，点下方「生成点评」按整场对话生成。</div>
+            </div>
+            <div class="card">
+              <div class="card-hd"><span class="card-t">本次会话</span><span class="hint" id="clipHint"></span></div>
+              <div id="clipBox"><div class="dim">正在读取…</div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- 逐字稿 ---------- -->
+      <section class="view" id="view-script">
+        <div class="vt"><h2>逐字稿</h2><span class="sub" id="scriptStat"></span></div>
+        <div class="card">
+          <div class="card-hd">
+            <span class="card-t">全文</span>
+            <span class="hint" id="scriptHint2">点句子标记 · 点段头点评</span>
+            <span class="btn-row" style="flex:0 0 auto">
+              <button type="button" class="mini" id="btnScriptReload">刷新</button>
+              <button type="button" class="mini" id="btnScriptCopy">复制</button>
+            </span>
+          </div>
+          <div class="script" id="scriptFull"></div>
+          <div class="empty" id="scriptFullEmpty">还没有内容，先在「听记」页开始一场。</div>
+        </div>
+      </section>
+
+      <!-- ---------- 标记 ---------- -->
+      <section class="view" id="view-marks">
+        <div class="vt"><h2>标记</h2><span class="sub" id="marksStat"></span></div>
+        <div class="card">
+          <div class="card-hd"><span class="card-t">筛选</span><span class="hint">点条目跳回原文 · 右侧可改可删</span></div>
+          <div class="tags" id="markFilter"></div>
+        </div>
+        <div id="marksList"></div>
+      </section>
+
+      <!-- ---------- 点评 ---------- -->
+      <section class="view" id="view-review">
+        <div class="vt"><h2>点评</h2><span class="sub" id="reviewStat"></span></div>
+        <div class="card">
+          <div class="card-hd"><span class="card-t">整场点评</span><span class="hint" id="reviewHint">时间 → 优点 → 问题</span></div>
+          <div class="btn-row">
+            <button type="button" class="btn primary" id="btnReview">生成整场点评</button>
+            <button type="button" class="mini" id="btnReviewCopy">复制</button>
+          </div>
+          <div class="prog" id="reviewProg" hidden>
+            <div class="prog-bar"><i></i></div>
+            <div class="prog-txt" id="reviewProgTxt">正在生成…</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><span class="card-t" id="reviewTitle">整场点评</span><span class="hint" id="reviewMode"></span></div>
+          <div class="seg rev-nav" id="reviewNav" hidden></div>
+          <div class="panel-body rich" id="reviewBody"></div>
+          <div class="empty" id="reviewEmpty">还没有点评。点上方「生成整场点评」，AI 会按整场对话给出结论。</div>
+        </div>
+        <div class="vt subvt"><h2>段落点评</h2><span class="sub" id="paraRevStat">—</span></div>
+        <div class="card">
+          <div class="card-hd"><span class="card-t">按段落触发</span><span class="hint">点任一段可单独点评</span></div>
+          <div class="btn-row">
+            <button type="button" class="mini" id="btnParaRevMiss">点评全部未评段落</button>
+            <button type="button" class="mini" id="btnParaRevRefresh">刷新</button>
+          </div>
+        </div>
+        <div id="paraRevList"></div>
+      </section>
+
+      <!-- ---------- 精简 ---------- -->
+      <section class="view" id="view-plain">
+        <div class="vt"><h2>精简</h2><span class="sub" id="plainStat"></span></div>
+        <div class="card">
+          <div class="card-hd">
+            <span class="card-t">精简稿</span>
+            <span class="btn-row" style="flex:0 0 auto">
+              <button type="button" class="mini" id="btnPlainStage">结构标签：开</button>
+              <button type="button" class="mini" id="btnPlainReload">刷新</button>
+              <button type="button" class="mini" id="btnPlainCopy">复制</button>
+            </span>
+          </div>
+          <div id="plainBody"><div class="dim">正在读取…</div></div>
+        </div>
+
+        <div class="card" id="cardPoints">
+          <div class="card-hd">
+            <span class="card-t">精简要点</span>
+            <span class="btn-row" style="flex:0 0 auto">
+              <button type="button" class="mini accent" id="btnPtsRun">生成要点</button>
+              <button type="button" class="mini" id="btnPtsCopyAll">复制全部</button>
+            </span>
+          </div>
+          <div class="pts-hd">
+            <span class="hint" id="ptsStat">还没有生成要点</span>
+            <label class="pts-ai" for="ptsAi"><input type="checkbox" id="ptsAi"><span>AI 判定</span></label>
+          </div>
+          <div class="pts-legend" id="ptsLegend" hidden>
+            <span class="pts-lg hit">答到</span>
+            <span class="pts-lg off">偏题</span>
+            <span class="pts-lg miss">遗漏</span>
+            <span class="pts-lg by">标签 / 语义 / 位置 = 归组依据</span>
+          </div>
+          <div id="ptsBody"><div class="empty">点「生成要点」按本题答题结构抽取关键词要点。</div></div>
+          <div class="hint pts-note" id="ptsNote"></div>
+        </div>
+      </section>
+
+      <!-- ---------- 学生 ---------- -->
+      <section class="view" id="view-students">
+        <div class="vt"><h2>学生</h2><span class="sub" id="studentsStat"></span></div>
+        <div class="card">
+          <div class="card-hd"><span class="card-t">录音归属</span><span class="hint" id="stuOwnerHint"></span></div>
+          <div id="stuOwner"><div class="dim">正在读取…</div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><span class="card-t">新增学生</span><span class="hint" id="stuLimit"></span></div>
+          <div class="dev-row" style="margin-top:0">
+            <input class="inp" id="stuName" placeholder="学生姓名" maxlength="20">
+            <button type="button" class="mini accent" id="btnStuAdd">添加</button>
+          </div>
+        </div>
+        <div id="studentsList"></div>
+        <div class="card">
+          <div class="card-hd"><span class="card-t">多人对比</span>
+            <span class="btn-row" style="flex:0 0 auto"><button type="button" class="mini" id="btnStuCompare">刷新</button></span>
+          </div>
+          <div id="stuCompare"><div class="dim">点「刷新」读取本场各学生的数据。</div></div>
+        </div>
+      </section>
+
+      <!-- ---------- 题库 ---------- -->
+      <section class="view" id="view-bank">
+        <div class="vt"><h2>题库</h2><span class="sub" id="bankStat"></span></div>
+
+        <div class="card">
+          <div class="card-hd"><span class="card-t">题库操作</span><span class="hint" id="bankCurBank"></span></div>
+          <div class="btn-row">
+            <button type="button" class="mini accent" id="btnBankMgr">题库管理</button>
+            <button type="button" class="mini" id="btnBankNewQ">新建题目</button>
+            <button type="button" class="mini" id="btnBankReload">刷新</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd"><span class="card-t">检索</span><span class="hint" id="bankHit"></span></div>
+          <div class="dev-row" style="margin-top:0">
+            <input class="inp" id="bankQ" placeholder="搜题干 / 题型 / 参考要点">
+            <button type="button" class="mini accent" id="btnBankSearch">搜索</button>
+          </div>
+          <div class="btn-row" style="margin-top:8px">
+            <button type="button" class="mini" id="btnBankBack" hidden>返回题库列表</button>
+            <button type="button" class="mini" id="btnBankOptOnly" hidden>只看未优化</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd"><span class="card-t">当前题目</span><span class="hint" id="bankCurHint"></span></div>
+          <div id="bankCur"><div class="dim">正在读取…</div></div>
+        </div>
+
+        <div class="card" id="bankOptCard" hidden>
+          <div class="card-hd"><span class="card-t">AI 优化</span><span class="hint" id="bankOptN">已选 0 题</span></div>
+          <div class="btn-row">
+            <button type="button" class="mini" id="btnBankSelAll">全选</button>
+            <button type="button" class="mini" id="btnBankSelNone">清空</button>
+            <button type="button" class="mini accent" id="btnBankOptSel" disabled>优化所选</button>
+            <button type="button" class="mini" id="btnBankOptAll">优化全库</button>
+            <button type="button" class="mini danger" id="btnBankOptStop" hidden>停止</button>
+          </div>
+          <div class="mbank-pw" id="bankOptBarWrap" hidden role="button" tabindex="0"
+               title="点击查看逐题实时输出：每道题的优化前后内容与 AI 原始返回">
+            <span class="mbank-bar"><i id="bankOptBar"></i></span>
+            <span class="mbank-pct" id="bankOptPct">0%</span>
+          </div>
+          <div class="dim" id="bankOptSt" style="margin-top:8px">一题一题串行走 AI；点进度条可实时查看每题优化前后内容。</div>
+        </div>
+
+        <div id="bankList"></div>
+      </section>
+
+      <!-- ---------- 历史 ---------- -->
+      <section class="view" id="view-history">
+        <div class="vt"><h2>历史</h2><span class="sub" id="historyStat"></span></div>
+        <div class="card">
+          <div class="card-hd"><span class="card-t">存档记录</span>
+            <span class="btn-row" style="flex:0 0 auto">
+              <select class="inp sel-sm" id="histStuSel"><option value="">全部学生</option></select>
+              <button type="button" class="mini" id="btnHistoryReload">刷新</button>
+            </span>
+          </div>
+          <div id="historyList"><div class="dim">正在读取…</div></div>
+        </div>
+        <div class="card" id="historyDetailCard" hidden>
+          <div class="card-hd"><span class="card-t" id="historyDetailTitle">存档详情</span><button type="button" class="mini" id="btnHistoryClose">收起</button></div>
+          <div id="historyDetail"></div>
+        </div>
+      </section>
+
+      <!-- ---------- 设置 ---------- -->
+      <section class="view" id="view-settings">
+        <div class="vt"><h2>设置</h2><span class="sub" id="settingsStat"></span></div>
+        <div class="card">
+          <div class="card-hd"><span class="card-t">页面形态</span><span class="hint" id="modeHint"></span></div>
+          <div class="seg" id="modeSeg2">
+            <button type="button" class="segbtn on" data-mode="phone">手机</button>
+            <button type="button" class="segbtn" data-mode="tablet">平板</button>
+          </div>
+          <div class="btn-row" style="margin-top:10px">
+            <button type="button" class="mini" id="btnModeAuto">跟随屏幕自动</button>
+          </div>
+          <div class="dim" style="margin-top:8px">手机：单列 + 抽屉侧栏；平板：与电脑版同排布，听记页三栏（左侧题库、中间逐字稿、右侧点评与会话）。选择会记在本机。</div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><span class="card-t">接入信息</span><span class="hint" id="secState"></span></div>
+          <div id="settingsNet"><div class="dim">正在读取…</div></div>
+          <div class="btn-row" style="margin-top:10px">
+            <button type="button" class="mini" id="btnCopyPage">复制手机访问地址</button>
+            <button type="button" class="mini" id="btnCopyHttps2">复制 HTTPS 地址</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><span class="card-t">识别与 AI</span><span class="hint" id="cfgState">只读</span></div>
+          <div id="settingsCfg"><div class="dim">正在读取…</div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><span class="card-t">音源记忆</span></div>
+          <div id="settingsSrc"><div class="dim">正在读取…</div></div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><span class="card-t">关于与开源许可</span><span class="hint">慕夕制作</span></div>
+          <div class="dim" id="settingsAbout">面试点评器 v2.6.0 · 使用第三方开源组件，均遵循各自许可证分发。</div>
+          <div class="btn-row" style="margin-top:10px">
+            <button type="button" class="mini" id="btnMoss">查看开源许可</button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <footer class="ops" id="ops">
+      <button type="button" class="btn primary" id="btnStart">开始听记</button>
+      <button type="button" class="btn danger" id="btnStop" disabled>停止</button>
+      <button type="button" class="btn ghost" id="btnReview2">生成点评</button>
+    </footer>
+  </div>
+
+  <!-- ==================== 标记抽屉 ==================== -->
+  <div class="sheet" id="sheet" hidden>
+    <div class="sheet-mask" id="sheetMask"></div>
+    <div class="sheet-body">
+      <div class="sheet-hd">
+        <span class="q" id="sheetQuote"></span>
+        <button type="button" class="x" id="btnSheetClose" aria-label="关闭">×</button>
+      </div>
+      <div class="tags" id="tagRow"></div>
+      <textarea class="inp" id="noteInput" placeholder="备注：这句话要改成什么、追问什么（可选）"></textarea>
+      <div class="sheet-ops">
+        <button type="button" class="btn ghost" id="btnTagCancel">取消</button>
+        <button type="button" class="btn primary" id="btnTagSave">保存标记</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 题库通用面板（详情 / 编辑 / 新建 / 实时输出 / 对比 / 管理） ==================== -->
+  <div class="sheet" id="mSheet" hidden>
+    <div class="sheet-mask" id="mSheetMask"></div>
+    <div class="sheet-body msheet">
+      <div class="sheet-hd">
+        <span class="q" id="mSheetTitle">题库</span>
+        <button type="button" class="x" id="btnMSheetClose" aria-label="关闭">×</button>
+      </div>
+      <div class="msheet-bd" id="mSheetBody"></div>
+      <div class="sheet-ops" id="mSheetOps"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+<script src="/static/mobile.js"></script>
+</body>
+</html>

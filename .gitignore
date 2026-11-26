@@ -1,0 +1,50 @@
+# ---- 运行时数据与隐私（禁止上传）----
+data/
+logs/
+*.log
+temp_srv_out.txt
+temp_srv_err.txt
+_dev*.log
+_dev*.err
+temp/
+output/
+
+# ---- 打包产物 ----
+dist/
+build/
+dist*/
+build*/
+*.spec.bak
+_packaging/dist/
+
+# ---- 备份与历史 ----
+_backup*/
+*_backup*/
+*.bak
+*.bak_*
+*.old
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+
+# ---- 编辑器 / 系统 ----
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# ---- 密钥与证书 ----
+cert/
+*.pem
+*.key
+*.pfx
+.env

@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>面试点评器 · 手机扫码入口</title>
+<style>
+  :root {
+    --bg: #f6f7fb; --card: #fff; --line: #e5e7ef; --txt: #1b1f2a; --dim: #6b7280;
+    --pri: #3457d5; --ok: #17864a; --warn: #b45309; --dan: #c02626;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--txt);
+         font-family: "Microsoft YaHei", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 28px 22px 40px; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  .sub { color: var(--dim); font-size: 13.5px; margin-bottom: 20px; }
+  .grid { display: grid; grid-template-columns: 300px 1fr; gap: 22px; align-items: start; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+  .qrbox { text-align: center; }
+  .qrbox img { width: 264px; height: 264px; display: block; margin: 0 auto 10px;
+               border-radius: 8px; background: #fff; }
+  .qrfail { width: 264px; height: 264px; margin: 0 auto 10px; display: none;
+            align-items: center; justify-content: center; text-align: center;
+            background: #fdeaea; color: var(--dan); font-size: 13px; line-height: 1.7;
+            border-radius: 8px; padding: 10px; }
+  .qrmode { display: flex; gap: 6px; justify-content: center; margin-bottom: 9px; }
+  .qrmode button { flex: 1; border: 1px solid var(--line); background: #fff; color: var(--dim);
+                   border-radius: 9px; padding: 7px 6px; font-size: 12.5px; cursor: pointer; }
+  .qrmode button.on { background: #eef2ff; border-color: var(--pri); color: var(--pri); font-weight: 600; }
+  .qrmode button:disabled { opacity: .45; cursor: not-allowed; }
+  .qrbox .hint { font-size: 12.5px; color: var(--dim); line-height: 1.6; }
+  .row { margin-bottom: 14px; }
+  .lab { font-size: 12.5px; color: var(--dim); margin-bottom: 5px; }
+  .val { display: flex; gap: 8px; align-items: center; }
+  .val code { flex: 1; background: #f2f4fa; border: 1px solid var(--line); border-radius: 9px;
+              padding: 9px 11px; font-size: 13.5px; word-break: break-all;
+              font-family: Consolas, "Courier New", monospace; }
+  .btn { border: 1px solid var(--line); background: #fff; color: var(--txt); border-radius: 9px;
+         padding: 9px 13px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+  .btn.primary { background: var(--pri); border-color: var(--pri); color: #fff; }
+  .btn:active { transform: translateY(1px); }
+  ol { margin: 6px 0 0; padding-left: 20px; font-size: 13.5px; line-height: 1.85; color: #374151; }
+  .tag { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px;
+         background: #eef2ff; color: var(--pri); margin-left: 8px; vertical-align: 2px; }
+  .tag.warn { background: #fff4e5; color: var(--warn); }
+  .tag.bad { background: #fdeaea; color: var(--dan); }
+  .tag.ok { background: #e8f7ef; color: var(--ok); }
+  .stat { font-size: 13px; color: var(--dim); margin-top: 12px; line-height: 1.8; }
+  .stat b { color: var(--txt); font-weight: 600; }
+  .fwhint {
+    margin-top: 10px; padding: 9px 12px; border-radius: 10px; line-height: 1.75;
+    font-size: 12.5px; color: var(--dim); background: rgba(240,173,32,.12);
+    border: 1px solid rgba(240,173,32,.28);
+  }
+  .fwhint b { color: var(--txt); }
+  @media (max-width: 720px) {
+    .grid { grid-template-columns: 1fr; }
+    .qrbox img { width: 220px; height: 220px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>手机 / 平板扫码听记 <span id="tagState" class="tag">检测中</span></h1>
+  <div class="sub">手机扫下方二维码用浏览器打开，用手机自己的麦克风收音；电脑端继续负责识别、逐字稿、标记与点评。</div>
+
+  <div class="grid">
+    <div class="card qrbox">
+      <div class="qrmode">
+        <button type="button" id="modeHttp" class="on">普通地址（微信可扫）</button>
+        <button type="button" id="modeHttps">安全地址（可开麦）</button>
+      </div>
+      <img id="qr" alt="手机端二维码" src="/api/mobile/qrcode.png">
+      <div class="qrfail" id="qrFail">二维码生成失败<br>请点击右侧「复制」把地址发到手机打开</div>
+      <div class="hint" id="qrHint">微信 / 相机扫码可直接打开页面；<br>要开手机麦克风，进页面后点「用 HTTPS 打开」</div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div class="lab">可开麦地址（HTTPS，首次需信任证书）</div>
+        <div class="val">
+          <code id="urlHttps">—</code>
+          <button class="btn primary" id="btnCopyHttps">复制</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="lab">仅查看地址（HTTP，微信能直接打开，不能开麦）</div>
+        <div class="val">
+          <code id="urlHttp">—</code>
+          <button class="btn" id="btnCopyHttp">复制</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="lab">操作步骤</div>
+        <ol>
+          <li>手机连电脑同一个 Wi-Fi（当前电脑：<b id="lanIp">—</b>）</li>
+          <li>扫左侧二维码：默认「安全地址」，手机/平板扫码后即可用麦克风录听课</li>
+          <li>首次打开会提示证书不受信任：安卓点「高级 → 继续前往」，iPhone 点「显示详细信息 → 访问此网站」；微信里若无「继续访问」，点右上「···」→ 在浏览器打开</li>
+          <li>只想用相机/微信快速看页面、不需要录音：切到「普通地址（微信可扫）」，但手机麦克风不可用</li>
+          <li>页面顶部显示「可开麦」后，点「开始听记」即可</li>
+        </ol>
+      </div>
+      <div class="stat" id="statLine">正在读取服务状态…</div>
+      <div class="fwhint" id="fwHint" hidden></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var lastTarget = '';
+  // 默认直接给「可开麦的 HTTPS 地址」——手机端只要能开麦才谈得上可用；HTTPS 未启用时自动回落普通地址
+  var qrMode = 'https';
+  var httpsReady = false;
+  var userPicked = false;
+
+  function applyQr(force) {
+    if (!force && qrMode === lastTarget) return;   // 轮询时避免每 5 秒重载图片
+    lastTarget = qrMode;
+    $('qrFail').style.display = 'none';
+    $('qr').style.display = '';
+    $('qr').src = '/api/mobile/qrcode.png?scheme=' + qrMode + '&t=' + Date.now();
+    $('modeHttp').className = qrMode === 'http' ? 'on' : '';
+    $('modeHttps').className = qrMode === 'https' ? 'on' : '';
+    $('qrHint').innerHTML = qrMode === 'http'
+      ? '普通地址：微信 / 相机扫码可直接打开页面；<br>但手机麦克风用不了，进页面后需点「用 HTTPS 打开」'
+      : '安全地址：扫码即可开手机麦克风。<br>首次打开提示「证书不受信任」→ 选「继续访问」；微信内若拦下，点右上「···」→ 在浏览器打开';
+  }
+
+  function setMode(m) {
+    if (m === 'https' && !httpsReady) return;
+    if (qrMode === m) return;
+    userPicked = true;
+    qrMode = m;
+    applyQr(true);
+  }
+
+  $('modeHttp').onclick = function () { setMode('http'); };
+  $('modeHttps').onclick = function () { setMode('https'); };
+  $('qr').onerror = function () {
+    $('qr').style.display = 'none';
+    $('qrFail').style.display = 'flex';
+  };
+
+  function setTag(cls, text) {
+    var t = $('tagState');
+    t.className = 'tag ' + cls;
+    t.textContent = text;
+  }
+
+  function copy(text, label) {
+    if (!text || text === '—') return;
+    var done = function () { $('statLine').innerHTML = '已复制' + label + '：<b>' + text + '</b>'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else { fallback(); }
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+  }
+
+  $('btnCopyHttps').onclick = function () { copy($('urlHttps').textContent, ' HTTPS 地址'); };
+  $('btnCopyHttp').onclick = function () { copy($('urlHttp').textContent, ' HTTP 地址'); };
+
+  function refresh() {
+    fetch('/api/mobile/info', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var https = d.https || {};
+        var target = d.qr_target || d.page_url || '';
+        $('urlHttps').textContent = https.page_url || '（HTTPS 未启动）';
+        $('urlHttp').textContent = d.http_page_url || '—';
+        $('lanIp').textContent = (d.lan_ip || '未识别')
+          + '（HTTP 端口 ' + (d.port || '-') + '，HTTPS 端口 ' + ((https.port) || '-') + '）';
+        httpsReady = !!https.enabled;
+        $('modeHttps').disabled = !httpsReady;
+        if (!httpsReady && qrMode === 'https') qrMode = 'http';
+        if (https.enabled) {
+          setTag('ok', 'HTTPS 已就绪 · 可开麦');
+        } else {
+          setTag('bad', 'HTTPS 未启动 · 手机无法开麦');
+        }
+        if (d.lan_ip) applyQr(false);
+        var bits = [];
+        bits.push('页面文件：<b>' + (d.page_ready ? '已就绪' : '缺失') + '</b>');
+        if (https.cert_not_after) bits.push('证书到期：<b>' + https.cert_not_after + '</b>（剩 ' + https.cert_days_left + ' 天）');
+        if (https.cert_ips && https.cert_ips.length) bits.push('证书覆盖 IP：<b>' + https.cert_ips.join(', ') + '</b>');
+        bits.push('当前会话：<b>' + (d.running ? (d.device_kind === 'remote' ? '手机端录音中' : '桌面端录音中') : '空闲') + '</b>');
+        if (https.error) bits.push('HTTPS 错误：<b style="color:#c02626">' + https.error + '</b>');
+        $('statLine').innerHTML = bits.join(' ｜ ');
+      })
+      .catch(function (e) {
+        setTag('bad', '无法连接本机服务');
+        $('statLine').textContent = '读取 /api/mobile/info 失败：' + e;
+      });
+  }
+
+  applyQr(true);
+  refresh();
+  setInterval(refresh, 5000);
+
+  // 防火墙放行提示：只在「未放行 / 部分放行」时出现，避免正常时干扰
+  var fwChecked = false;
+  function checkFirewall() {
+    if (fwChecked) return;
+    fetch('/api/system/firewall', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        fwChecked = true;
+        if (!j || !j.ok) return;
+        if (j.level === 'all' || j.level === 'unknown') { $('fwHint').hidden = true; return; }
+        $('fwHint').hidden = false;
+        $('fwHint').innerHTML = '手机扫码后打不开 / 一直转圈？当前防火墙状态：<b>'
+          + (j.text || '未完全放行') + '</b>。回到电脑端点「<b>设置 → 手机接入 · 防火墙放行 → 一键放行</b>」，'
+          + '之后手机即可直接访问。';
+      })
+      .catch(function () { fwChecked = true; });
+  }
+  checkFirewall();
+  setInterval(checkFirewall, 30000);
+})();
+</script>
+</body>
+</html>

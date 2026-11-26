@@ -1,0 +1,801 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>面试点评器 · 慕夕制作</title>
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+<!-- ===== 桌面版自定义标题栏（无地址栏；仅在内嵌 WebView 中显示） ===== -->
+<div class="apptitlebar" id="appTitleBar">
+  <span class="atb-logo" aria-hidden="true">面</span>
+  <span class="atb-name">面试点评器</span>
+  <span class="atb-sub">v2.6.0 · 慕夕制作</span>
+  <span class="atb-drag" id="atbDrag" title="按住拖动窗口，双击最大化/还原"></span>
+  <span class="atb-btns">
+    <button class="atb-btn" id="btnWinMin" title="最小化" aria-label="最小化"><svg viewBox="0 0 12 12"><path d="M2 6h8"/></svg></button>
+    <button class="atb-btn" id="btnWinMax" title="最大化 / 还原" aria-label="最大化"><svg viewBox="0 0 12 12"><rect x="2.4" y="2.4" width="7.2" height="7.2" rx="1.4"/></svg></button>
+    <button class="atb-btn atb-close" id="btnWinClose" title="关闭" aria-label="关闭"><svg viewBox="0 0 12 12"><path d="M2.6 2.6l6.8 6.8M9.4 2.6L2.6 9.4"/></svg></button>
+  </span>
+</div>
+
+<!-- ===== 无边框窗口的 8 个边角拖拽区（桌面版可用） ===== -->
+<div class="rz-layer" id="rzLayer" aria-hidden="true">
+  <i class="rz rz-t" data-edge="top"></i>
+  <i class="rz rz-b" data-edge="bottom"></i>
+  <i class="rz rz-l" data-edge="left"></i>
+  <i class="rz rz-r" data-edge="right"></i>
+  <i class="rz rz-tl" data-edge="topleft"></i>
+  <i class="rz rz-tr" data-edge="topright"></i>
+  <i class="rz rz-bl" data-edge="bottomleft"></i>
+  <i class="rz rz-br" data-edge="bottomright"></i>
+</div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="dot" id="statusDot"></span>
+    <span class="title">面试点评器</span><span class="ver">v2.6.0 · 慕夕制作</span>
+    <span class="state" id="stateText">待机</span>
+  </div>
+
+  <div class="controls">
+    <div class="seg" id="srcSeg" title="选择声音来源：系统内录=抓电脑正在播放的声音；麦克风=抓现场说话">
+      <button class="segbtn active" data-kind="loopback">系统内录</button>
+      <button class="segbtn" data-kind="mic">麦克风</button>
+    </div>
+    <select id="deviceSel" title="声音来源设备"></select>
+    <span class="levelbar" id="levelBar" title="实时输入电平：说话时应有明显跳动"><i></i></span>
+    <button id="btnStart" class="btn primary">开始听记</button>
+    <button id="btnStop" class="btn danger" disabled>停止</button>
+    <span class="timer" id="timer">00:00</span>
+  </div>
+
+  <div class="right">
+    <div class="qs-wrap" id="qsWrap">
+      <input id="bankSearchInp" class="inp qs-inp" autocomplete="off"
+             placeholder="搜题库：题干 / 题型（↑↓ 选，回车载入）"
+             title="不用打开题库弹窗，直接在主界面搜索所有题库的题目" />
+      <div id="bankSearchPop" class="qs-pop" hidden></div>
+    </div>
+    <span class="tb-sep" aria-hidden="true"></span>
+    <button id="btnMobileScan" class="btn ghost" title="用手机 / 平板扫码听记：在弹出的覆盖层里查看二维码与手机访问地址（Esc 或右上角关闭）">手机扫码</button>
+    <button id="btnQuickNote" class="btn ghost" title="打开快速记录面板：听记时随手记学生的问题，回车自动编号">快速记录</button>
+    <button id="btnPoints" class="btn ghost" title="精简要点：把精简版逐字稿压缩成按答题结构分组的要点关键词，可一键复制">精简要点</button>
+    <span class="tb-sep" aria-hidden="true"></span>
+    <button id="btnNew" class="btn ghost">新建一场</button>
+    <button id="btnHistory" class="btn ghost">历史记录</button>
+    <button id="btnSettings" class="btn ghost">设置</button>
+  </div>
+</header>
+
+<!-- 学生切换条：一场之内多位学生分别答题 -->
+<div class="studentbar" id="studentBar">
+  <span class="sb-label">本场学生</span>
+  <div class="sb-chips" id="studentChips"></div>
+  <div class="btnrow">
+    <button id="btnAddStudent" class="mini primary-m" title="在当前场次内新增一位学生，各自独立记录">+ 加一位学生</button>
+    <button id="btnCompare" class="mini" title="对比本场多位学生的作答">对比</button>
+  </div>
+  <span class="sb-tip" id="studentTip">切到哪位学生，逐字稿 / 精简版 / 点评 / 标记就记到哪位名下</span>
+</div>
+
+<main class="layout" id="layout">
+  <!-- 左：题目与题库 -->
+  <aside class="pane left" id="paneLeft">
+    <section class="block qblock" id="blockQ">
+      <div class="block-head">
+        <h3>本题信息</h3>
+        <div class="btnrow">
+          <button id="btnAnalyzeQ" class="mini primary-m" title="粘贴题目原文后自动分析题型与答题结构">粘贴分析</button>
+          <button id="btnPickBank" class="mini">从题库选</button>
+        </div>
+      </div>
+      <label class="lbl" for="candidate">考生</label>
+      <input id="candidate" class="inp" placeholder="如：张三 / 3号考生" />
+      <label class="lbl" for="question">题干</label>
+      <textarea id="question" class="inp ta" rows="4" placeholder="直接粘贴题目原文，再点右上「粘贴分析」自动识别题型、审题要点与答题结构"></textarea>
+      <label class="lbl" for="qtype">题型</label>
+      <div class="qtype-row">
+        <select id="qtype" class="inp" title="从题型列表里选择；选「＋ 新建题型」可直接新建并立即选中"></select>
+        <button id="btnNewQtype" class="mini" title="新建题型（新建后立即选中）">＋新建</button>
+      </div>
+      <label class="lbl" for="ref">参考要点（可选）</label>
+      <textarea id="ref" class="inp ta" rows="3" placeholder="评分要素、参考要点、答题思路"></textarea>
+      <div id="qAnalyCard" class="qanaly" style="display:none">
+        <div class="qa-top">
+          <span class="qa-tag">已解析</span>
+          <span class="qa-type" id="qaType"></span>
+          <span class="qa-src" id="qaSrc"></span>
+        </div>
+        <div class="qa-stages" id="qaStages"></div>
+        <div class="qa-acts">
+          <button id="btnQaOpen" class="mini primary-m">查看 / 编辑</button>
+          <button id="btnQaBank" class="mini">一键入库</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="hsplit" data-split="left-v" title="拖动调整上下高度 · 双击复位"></div>
+
+    <section class="block grow" id="blockBank">
+      <div class="block-head">
+        <h3>题库</h3>
+        <div class="btnrow">
+          <button id="btnImport" class="mini">导入文本</button>
+          <button id="btnImportDocx" class="mini" title="选 Word(.docx) / PDF / 文本，可一次选多个文件，解析后先进预览列表">导入 Word/PDF</button>
+        </div>
+      </div>
+      <input type="file" id="bankFile" accept=".docx,.pdf,.txt,.md,.csv" multiple style="display:none" />
+      <div id="bankBackBar" class="bank-backbar" style="display:none">
+        <button id="btnBankBack" class="mini">← 返回题库列表</button>
+        <span id="bankCurName" class="bcn"></span>
+        <button id="btnBankCloseItems" class="mini" title="收起题目列表">收起</button>
+      </div>
+      <input id="bankFilter" class="inp mono" style="display:none" placeholder="搜索题目关键词…" />
+      <div id="bankOptBar" class="aiopt-bar" style="display:none">
+        <label class="cpopt" title="勾选要优化的题目（也可逐题点右侧「AI 优化」）"><input type="checkbox" id="aiOptAll" />全选</label>
+        <span class="aiopt-n" id="aiOptCount">已选 0 题</span>
+        <button id="btnAiOptSel" class="mini" title="对勾选的题目调用「设置」里的 AI 接口做质量优化：题干规范 / 题型校准 / 审题要点 / 答题环节与要点 / 参考要点提质">AI 优化所选</button>
+        <button id="btnAiOptAllQ" class="mini ghost" title="对整个题库逐题优化（耗时较长，可中途看进度）">优化全库</button>
+        <button id="btnAiOptUndo" class="mini ghost" title="把本批已优化的题目还原成优化前的样子（一键撤销回滚）" disabled>一键撤销</button>
+        <div class="aiopt-bar-in with-pct" id="aiOptBarWrap" hidden role="button" tabindex="0"
+             title="点击查看逐题实时输出：每道题的优化前后对比与 AI 原始返回"><i id="aiOptBar"></i><span class="aiopt-pct" id="aiOptPct">0%</span></div>
+        <button id="btnAiOptCancel" class="mini danger" hidden title="立即停止本次 AI 优化：已完成的题目会保留，未处理的题目不再继续">停止</button>
+        <span class="aiopt-st" id="aiOptSt"></span>
+      </div>
+      <div id="bankList" class="bank-list"></div>
+      <div id="bankEmpty" class="bank-empty" style="display:none"></div>
+      <div id="bankItems" class="bank-items"></div>
+    </section>
+  </aside>
+
+  <div class="vsplit" data-split="left" title="拖动调整左栏宽度 · 双击复位"></div>
+
+  <!-- 中：逐字稿（按段落计时） -->
+  <section class="pane center" id="paneCenter">
+    <div class="pane-head">
+      <h2>实时逐字稿 · 按段落计时</h2>
+      <div class="hint">每段自动切分并给出起止时间 · 1 亮点 / 2 硬伤 / 3 追问 / 4 口头禅 · Enter 备注 · 段落可单独点评</div>
+    </div>
+    <div id="transcript" class="transcript">
+      <div class="empty" id="emptyTip">点「开始听记」后，可按上方切换「系统内录」（抓电脑正在播放的声音）或「麦克风」（抓现场说话），实时转成文字并按段落记录起止时间。</div>
+    </div>
+    <div class="floating-mark" id="floatMark">
+      <span class="ftext" id="floatText"></span>
+      <span class="fk">1 亮点</span><span class="fk">2 硬伤</span><span class="fk">3 追问</span><span class="fk">4 口头禅</span>
+    </div>
+
+    <div class="hsplit" data-split="center" title="拖动调整逐字稿 / 精简版高度 · 双击复位"></div>
+
+    <!-- 精简版：逐段去冗余 + 智能纠错 + 标记句加粗变色 -->
+    <section class="plainpane" id="plainPane">
+      <div class="plainhead">
+        <h2>精简版 · 去冗余逐字稿</h2>
+        <span class="plainhint" id="plainHint">自动去语气词 · 逐句智能纠错 · 可鼠标选句改归属结构（选中后右键）</span>
+        <div class="btnrow">
+          <button id="btnPlainView" class="mini" title="切换「按段落」/「按结构」显示">按结构看</button>
+          <button id="btnCorrectAll" class="mini primary-m" title="对全文逐句做智能纠错（同音字 / 错别字 / 口误按上下文还原）">智能纠错</button>
+          <button id="btnCopyPlain" class="mini">复制整篇</button>
+        <label class="cpopt" title="勾选：按答题环节分组并加【抓落实】【重分析】等前置标题；不勾选：只复制纯文本"><input type="checkbox" id="chkCopyStage" checked />自动加环节标题</label>
+          <button id="btnTogglePlain" class="mini">收起</button>
+        </div>
+      </div>
+      <div class="pbar" id="plainSelBar">
+        <span class="pbar-t empty" id="plainSelCount">未选句 · 单击 / 拖选 / Shift 连选</span>
+        <button id="btnSentStage" class="mini primary-m" title="把选中的句子归入当前题型的某个答题环节">改归属结构</button>
+        <button id="btnSentSplit" class="mini" title="双击句子把光标点到要拆开的位置，再点这里或按 Ctrl+Enter 拆成两句">拆句</button>
+        <button id="btnSentMerge" class="mini" title="选中相邻的两句（Shift 连选）后合并成一句">合并</button>
+        <button id="btnSentDel" class="mini ghost" title="删除选中的句子（Delete 键同样生效，整段至少保留一句）">删除</button>
+        <button id="btnSentAuto" class="mini" title="取消选中句子的手动归属，回到该段自动判定结果">取消手动归属</button>
+        <button id="btnSentClear" class="mini ghost" title="清空当前选中（Esc）">清空选择</button>
+      </div>
+      <div class="plainbox" id="plainBox">
+        <div class="muted" id="plainEmpty">段落说完后，这里会自动出现去掉语气词、口头禅、重复和结巴的干净文字（不带时间戳），并标明该段属于审题 / 提观点 / 重分析 / 抓落实 / 结尾中的哪一环；被标记的句子会加粗变色。</div>
+        <div id="plainList" class="plainlist"></div>
+      </div>
+    </section>
+  </section>
+
+  <div class="vsplit" data-split="right" title="拖动调整右栏宽度 · 双击复位"></div>
+
+  <!-- 右：标记 + 点评 -->
+  <aside class="pane right" id="paneRight">
+    <section class="block" id="blockMarks">
+      <div class="block-head"><h3>标记汇总</h3><span class="count" id="markCount">0</span></div>
+      <div id="marks" class="marks"><div class="muted">还没有标记</div></div>
+    </section>
+
+    <div class="hsplit" data-split="right-v" title="拖动调整标记 / 点评高度 · 双击复位"></div>
+
+    <section class="block grow" id="blockReview">
+      <div class="block-head">
+        <h3>点评</h3>
+        <div class="btnrow">
+          <button id="btnReview" class="mini primary-m">重新点评</button>
+          <button id="btnReviewFull" class="mini">全屏</button>
+          <button id="btnExportDocx" class="mini" title="把整场复盘（基本信息 / 时间分配 / 三段式点评 / 精简要点 / 精简逐字稿）导出为 Word">导出复盘稿</button>
+          <button id="btnSave" class="mini">存档</button>
+        </div>
+      </div>
+      <div class="review-meta" id="reviewMeta"></div>
+      <div id="review" class="review md"><div class="muted">停止听记后会自动生成最终点评；也可点「重新点评」手动再评一次。点评按当前所选学生生成，切换学生会各自独立。</div></div>
+    </section>
+  </aside>
+</main>
+
+<!-- 点评全屏态的唯一关闭入口（右上角，与各弹窗 × 同款式） -->
+<button class="x modal-x review-x" id="btnReviewExit" type="button" title="退出全屏（Esc）" aria-label="退出全屏" hidden>×</button>
+
+<!-- 题库选择弹层 -->
+<div class="modal" id="modalBank">
+  <div class="modal-box">
+    <div class="modal-head"><h3>题库</h3><div class="mh-right"><button class="x modal-x" data-close type="button" title="关闭（Esc）" aria-label="关闭">×</button></div></div>
+    <div class="mh-tools"><input id="bankPickFilter" class="inp mono" placeholder="搜索题库名 / 题干 / 题型关键词…" /></div>
+    <div class="modal-body" id="bankPickBody"></div>
+    <div class="modal-foot bar"><span class="muted" id="bankPickCount"></span></div>
+  </div>
+</div>
+
+<!-- 学生对比弹层 -->
+<div class="modal" id="modalCompare">
+  <div class="modal-box xwide">
+    <div class="modal-head"><h3>本场学生对比</h3><div class="mh-right"><button class="x modal-x" data-close type="button" title="关闭（Esc）" aria-label="关闭">×</button></div></div>
+    <div class="modal-body" id="compareBody"></div>
+    <div class="modal-foot bar"><span class="muted" id="compareTip"></span></div>
+  </div>
+</div>
+
+<!-- 导入题库弹层 -->
+<div class="modal" id="modalImport">
+  <div class="modal-box">
+    <div class="modal-head"><h3>导入题库（文本 / JSON）</h3><div class="mh-right"><button class="x modal-x" data-close type="button" title="关闭（Esc）" aria-label="关闭">×</button></div></div>
+    <div class="modal-body">
+      <p class="tip">支持两种格式：<br />
+        1) 纯文本：每题以「1. 」或「第1题」开头，<code>参考要点：</code> / <code>答题思路：</code> 引出要点，多题之间可用一行 <code>===</code> 分隔；<br />
+        2) JSON 数组：<code>[{"question":"题干","qtype":"综合分析","ref":"要点"}]</code>
+      </p>
+      <label class="lbl">题库名称</label>
+      <input id="bankName" class="inp" placeholder="如：结构化面试高频真题" />
+      <label class="lbl">内容</label>
+      <textarea id="bankText" class="inp ta mono" rows="12" placeholder="1. 某地推行干部下沉社区，有人说好，有人说形式主义，你怎么看？
+参考要点：辩证看待；下沉的初衷；形式主义的表现与成因；如何做实"></textarea>
+      <div class="modal-foot"><button id="btnDoImport" class="btn primary">导入</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- 导入方式选择（点「导入 Word/PDF」时先弹这里，默认记住上次选择） -->
+<div class="modal" id="modalImpMode">
+  <div class="modal-box">
+    <div class="modal-head"><h3>导入解析方式</h3><div class="mh-right"><button class="x modal-x" data-close type="button" title="关闭（Esc）" aria-label="关闭">×</button></div></div>
+    <div class="modal-body">
+      <p class="tip">解析方式只决定这一次导入怎么处理，下次会自动沿用你这次的选择。</p>
+      <div class="impmode-list">
+        <label class="impmode-item">
+          <input type="radio" name="impMode" value="ai" id="impModeAi" />
+          <span class="impmode-txt"><b>AI 解析</b><em>调用设置页配置的 AI 接口补题型、答题环节与要点，识别更准；会产生接口费用，未配置 API Key 时自动回退本地规则。</em></span>
+        </label>
+        <label class="impmode-item">
+          <input type="radio" name="impMode" value="local" id="impModeLocal" />
+          <span class="impmode-txt"><b>仅本地解析</b><em>完全在本机用本地规则解析，只用文档自带字段，不发起任何网络与 AI 请求。</em></span>
+        </label>
+      </div>
+      <p class="tip" id="impModeTip"></p>
+    </div>
+    <div class="modal-foot"><button id="btnImpModeOk" class="btn primary" type="button">选择文件并开始</button></div>
+  </div>
+</div>
+
+<!-- 导入预览（Word / PDF 解析结果 -> 勾选 / 改题型与题干 -> 确认入库） -->
+<div class="modal" id="modalImportPreview">
+  <div class="modal-box xwide">
+    <div class="modal-head">
+      <h3>导入预览 · 确认后入库</h3>
+      <div class="mh-right"><button class="x modal-x" data-close type="button" title="关闭（Esc）" aria-label="关闭">×</button></div>
+    </div>
+    <div class="modal-body ip-body">
+      <div id="ipFiles" class="ip-files"></div>
+      <div class="ip-toolbar">
+        <input id="ipBankName" class="inp" placeholder="题库名称（默认取文件名）" />
+        <button id="ipAll" class="mini" type="button">全选</button>
+        <button id="ipNone" class="mini" type="button">全不选</button>
+        <span class="muted" id="ipStat"></span>
+      </div>
+      <div id="ipList" class="ip-list"></div>
+    </div>
+    <div class="modal-foot bar">
+      <span class="muted" id="ipTip"></span>
+      <button id="btnImportCommit" class="btn primary" type="button">确认入库</button>
+    </div>
+  </div>
+</div>
+
+<!-- 题库解析进度卡（后台任务，可最小化为角标继续跑） -->
+<div id="impJob" class="impjob" hidden>
+  <div class="ij-head">
+    <span class="ij-title">题库解析中</span>
+    <span class="ij-ai" id="ijAi"></span>
+    <button class="ij-min" id="ijMin" type="button" title="最小化为角标，后台继续解析">—</button>
+  </div>
+  <div class="ij-stage" id="ijStage">读取文件</div>
+  <div class="ij-bar"><i id="ijBar"></i></div>
+  <div class="ij-meta">
+    <span class="ij-pct" id="ijPct">0%</span>
+    <span id="ijCur">第 0/0 题</span>
+    <span class="muted" id="ijFiles"></span>
+  </div>
+  <div class="ij-err" id="ijErr" hidden></div>
+</div>
+<button id="impBadge" class="ij-badge" type="button" hidden title="点开查看解析进度"><span id="ijBadgeTxt">解析中</span></button>
+
+<!-- 题目解析（粘贴题目 -> 题型 / 审题 / 结构 / 要点） -->
+<div class="modal" id="modalQAnalyze">
+  <div class="modal-box wide">
+    <div class="modal-head">
+      <h3>题目解析 · 可编辑</h3>
+      <div class="mh-right"><button class="x modal-x" data-close type="button" title="关闭（Esc）" aria-label="关闭">×</button></div>
+    </div>
+    <div class="modal-body qa-body">
+      <label class="lbl">题目原文（可直接粘贴，自动去掉题号与作答提示）</label>
+      <textarea id="qaQuestion" class="inp ta" rows="3" placeholder="粘贴题目原文…"></textarea>
+      <div class="qa-line">
+        <div class="qa-col">
+          <label class="lbl">题型</label>
+          <div class="qtype-row">
+            <select id="qaQtype" class="inp" title="从题型列表里选择；选「＋ 新建题型」可直接新建并立即选中"></select>
+            <button id="btnQaNewQtype" class="mini" title="新建题型（新建后立即选中）">＋新建</button>
+          </div>
+        </div>
+        <div class="qa-col" id="qaBankCol">
+          <label class="lbl">题库（选已有题库，或选「＋ 新建题库」）</label>
+          <div class="qa-bankrow">
+            <select id="qaBankSel" class="inp" title="保存到哪个题库"></select>
+            <input id="qaBankNew" class="inp" placeholder="新题库名称" style="display:none" maxlength="40" />
+          </div>
+        </div>
+      </div>
+      <p class="tip" id="qaReason"></p>
+
+      <label class="lbl">审题要点（每行一条，可直接改）</label>
+      <textarea id="qaExam" class="inp ta" rows="5"></textarea>
+
+      <div class="qa-structhead">
+        <span class="lbl" style="margin:0">答题结构（各环节，可增删改）</span>
+        <button id="btnQaAddStage" class="mini">+ 增加环节</button>
+      </div>
+      <div id="qaStruct" class="qa-struct"></div>
+
+      <label class="lbl">关键要点（每行一条）</label>
+      <textarea id="qaKeys" class="inp ta" rows="4"></textarea>
+
+      <label class="lbl">参考要点（入库内容，可手动润色）</label>
+      <textarea id="qaRef" class="inp ta mono" rows="8"></textarea>
+      <p class="tip" id="qaHint">确认无误后点「一键写入题库」，题干与参考要点会一起存进题库，并同步为当前题目，可直接开始答题与点评。</p>
+    </div>
+    <div class="modal-foot">
+      <button id="btnQaRebuild" class="btn ghost">按当前内容重建参考要点</button>
+      <button id="btnQaReanalyze" class="btn ghost">重新分析</button>
+      <button id="btnQaSave" class="btn primary">一键写入题库</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI 优化对比弹层（大窗口，优化前 / 优化后 左右并排） -->
+<div class="modal" id="modalAiDiff">
+  <div class="modal-box widest">
+    <div class="modal-head">
+      <h3 id="aiDiffTitle">AI 优化对比</h3>
+      <div class="mh-right"><button class="x modal-x" data-close type="button" title="关闭（Esc）" aria-label="关闭">×</button></div>
+    </div>
+    <div class="modal-body aidiff-body">
+      <div class="df-grid" id="dfGrid"></div>
+      <p class="tip df-legend">右侧<b class="lg-new">橙黄色加粗</b>是新增或被改写的文字，左侧<b class="lg-del">灰色删除线</b>是被替换掉的原文，其余为未改动内容。</p>
+    </div>
+  </div>
+</div>
+
+<!-- AI 优化实时输出弹层（点进度条打开：逐题看优化前后与 AI 原始返回） -->
+<div class="modal" id="modalAiLive">
+  <div class="modal-box widest">
+    <div class="modal-head">
+      <h3 id="aiLiveTitle">AI 优化实时输出</h3>
+      <div class="mh-right">
+        <span class="aol-sum" id="aiLiveSum"></span>
+        <button class="mini ghost" id="btnAiLiveRefresh" type="button" title="立即刷新一次">刷新</button>
+        <button class="x modal-x" data-close type="button" title="关闭（Esc）" aria-label="关闭">×</button>
+      </div>
+    </div>
+    <div class="modal-body aol-body">
+      <div class="aol-bar"><div class="aol-bar-in" id="aiLiveBarWrap"><i id="aiLiveBar"></i><span class="aiopt-pct" id="aiLivePct">0%</span></div>
+        <span class="aol-st" id="aiLiveSt">等待开始…</span></div>
+      <div class="aol-list" id="aiLiveList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 新建题型弹层 -->
+<div class="modal" id="modalQtype">
+  <div class="modal-box">
+    <div class="modal-head"><h3>新建题型</h3><div class="mh-right"><button class="x modal-x" data-close type="button" title="关闭（Esc）" aria-label="关闭">×</button></div></div>
+    <div class="modal-body">
+      <label class="lbl">题型名称</label>
+      <input id="qtNewName" class="inp" maxlength="20" placeholder="如：情景演讲 / 追问应变" />
+      <label class="lbl">该题型的答题环节（一行一个，顺序即答题顺序）</label>
+      <textarea id="qtNewStages" class="inp ta mono" rows="6">审题
+提观点
+重分析
+抓落实
+结尾</textarea>
+      <p class="tip" id="qtNewTip">新建后会写入你的本地题型库（不影响内置题型），并立即在「题型」下拉里选中该题型，题库列表、当前题目区与精简版「按结构看」都会按它的环节来。</p>
+    </div>
+    <div class="modal-foot">
+      <button id="btnQtNewOk" class="btn primary">创建并选中</button>
+    </div>
+  </div>
+</div>
+
+<!-- 编辑题库单题弹层 -->
+<div class="modal" id="modalItemEdit">
+  <div class="modal-box">
+    <div class="modal-head"><h3>编辑题目</h3><div class="mh-right"><button class="x modal-x" data-close type="button" title="关闭（Esc）" aria-label="关闭">×</button></div></div>
+    <div class="modal-body">
+      <p class="tip" id="itEditBank"></p>
+      <label class="lbl">题干</label>
+      <textarea id="itQuestion" class="inp ta" rows="5"></textarea>
+      <label class="lbl">题型</label>
+      <div class="qtype-row">
+        <select id="itQtype" class="inp" title="从题型列表里选择；选「＋ 新建题型」可直接新建并立即选中"></select>
+        <button id="btnItNewQtype" class="mini" title="新建题型（新建后立即选中）">＋新建</button>
+      </div>
+      <label class="lbl">参考要点（可选）</label>
+      <textarea id="itRef" class="inp ta mono" rows="6"></textarea>
+    </div>
+    <div class="modal-foot">
+      <button id="btnItSave" class="btn primary">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 设置弹层 -->
+<div class="modal" id="modalSettings">
+  <div class="modal-box">
+    <div class="modal-head"><h3>设置 · AI / 声音来源 / 段落 / 题型结构</h3><div class="mh-right"><button class="x modal-x" data-close type="button" title="关闭（Esc）" aria-label="关闭">×</button></div></div>
+    <div class="set-tabs">
+      <button class="set-tab active" data-tab="basic">基础设置</button>
+      <button class="set-tab" data-tab="qtype">题型结构管理</button>
+    </div>
+    <div class="modal-body" id="setPaneBasic">
+      <label class="lbl">接口地址 base_url</label>
+      <input id="cfgBase" class="inp" placeholder="https://api.deepseek.com/v1" />
+      <label class="lbl">模型名</label>
+      <input id="cfgModel" class="inp" placeholder="deepseek-chat" />
+      <label class="lbl">API Key</label>
+      <input id="cfgKey" class="inp" type="password" placeholder="sk-...（留空表示不修改已保存的 Key）" />
+      <p class="tip" id="cfgTip"></p>
+
+      <div class="divider">外观主题</div>
+      <label class="lbl">界面风格（浅色 / 深色均为新拟物）</label>
+      <select id="cfgTheme" class="inp">
+        <option value="auto">跟随系统</option>
+        <option value="light">浅色</option>
+        <option value="dark">深色</option>
+      </select>
+      <p class="tip">切换后立即生效并记住；深浅两套配色按同一套阴影与圆角规则设计。</p>
+
+      <div class="divider">声音来源（记忆上次选择）</div>
+      <label class="lbl">默认输入源</label>
+      <select id="cfgKind" class="inp">
+        <option value="loopback">系统内录（抓电脑播放的声音）</option>
+        <option value="mic">麦克风（抓现场说话）</option>
+      </select>
+      <label class="lbl">默认设备</label>
+      <select id="cfgDevice" class="inp"></select>
+      <p class="tip">开始听记时按此处保存的设备自动选中；下次打开软件仍沿用，无需重新选择。</p>
+      <label class="chk"><input type="checkbox" id="cfgCorrect" /> 开启智能纠错（精简版按上下文还原同音字 / 错别字 / 口误）</label>
+
+      <div class="divider">段落切分</div>
+      <div class="grid2">
+        <div>
+          <label class="lbl">停顿切段阈值（秒）</label>
+          <input id="cfgPause" class="inp" type="number" step="0.1" min="0.5" value="1.5" />
+        </div>
+        <div>
+          <label class="lbl">单段最长（秒）</label>
+          <input id="cfgMaxSec" class="inp" type="number" step="5" min="15" value="55" />
+        </div>
+      </div>
+      <label class="lbl">单段最多字数</label>
+      <input id="cfgMaxChars" class="inp" type="number" step="20" min="80" value="240" />
+      <p class="tip">停顿超过阈值、或段落超时 / 超字数时自动切新段；切段后对该段做一次即时点评。</p>
+      <label class="chk"><input type="checkbox" id="cfgRealtime" /> 开启段落即时点评（每段调用一次 API，费 token）</label>
+      <div class="divider">手机接入 · 防火墙放行</div>
+      <div class="set-row">
+        <div class="set-row-main">
+          <div class="set-row-title">入站放行状态 <span class="fw-badge" id="fwBadge">读取中…</span></div>
+          <div class="set-row-path" id="fwStatusText">正在读取 Windows 防火墙状态…</div>
+          <div class="set-row-path" id="fwProgram">--</div>
+        </div>
+        <button id="btnFwAllow" class="btn primary" type="button" title="为当前程序添加一条入站允许规则（域 / 专用 / 公用网络全部适用）">一键放行</button>
+        <button id="btnFwRemove" class="btn ghost" type="button" title="只删除本程序自己创建的那条放行规则">撤销放行</button>
+      </div>
+      <p class="tip" id="fwTip">手机扫码打不开、一直转圈，大多是 Windows 防火墙拦了本程序的入站连接。点「一键放行」会弹一次系统授权框（选「是」），之后对域 / 专用 / 公用三种网络类型全部放行；只加本程序这一条规则，不改防火墙总开关，随时可「撤销放行」。</p>
+
+      <div class="divider">错误日志</div>
+      <div class="set-row">
+        <div class="set-row-main">
+          <div class="set-row-title">错误日志</div>
+          <div class="set-row-path" id="logDirPath">读取中…</div>
+        </div>
+        <button id="btnOpenLogs" class="btn ghost" type="button">打开日志目录</button>
+      </div>
+      <p class="tip" id="logTip">程序运行时的接口耗时、异常堆栈、AI 请求失败原因都会记在这里；反馈问题时把当天的 app-日期.log 发过来即可定位。单文件满 2MB 自动分卷，保留 5 份。</p>
+      <p class="tip" id="logSizeTip"></p>
+      <div class="divider">关于</div>
+      <div class="about" id="aboutBox">
+        <div><b>面试点评器</b> v2.6.0</div>
+        <div>作者：<b>慕夕制作</b></div>
+        <div class="tip" id="aboutData">数据目录：--</div>
+        <div class="oss-entry">
+          <span class="tip">本软件使用 26 个第三方开源组件，遵循各自许可证分发。</span>
+          <button id="btnOpenOss" class="btn ghost" type="button">开源许可</button>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button id="btnOpenData" class="btn ghost">打开数据目录</button>
+        <button id="btnTestCfg" class="btn ghost">测试连通</button>
+        <button id="btnSaveCfg" class="btn primary">保存</button>
+      </div>
+      <pre id="cfgTestOut" class="cfg-test-out" hidden></pre>
+    </div>
+
+    <!-- 题型结构管理 -->
+    <div class="modal-body hidden" id="setPaneQtype">
+      <div class="qt-admin">
+        <div class="qta-left">
+          <div class="qta-lhead">
+            <span class="qta-ltitle">题型（<b id="qtaCount">0</b>）</span>
+            <button id="btnQtaNew" class="mini primary-m" title="新建一个空题型，右侧编辑结构">＋新建</button>
+          </div>
+          <input id="qtaFilter" class="inp qta-filter" placeholder="筛选题型名 / 别名" />
+          <div class="qta-list" id="qtaList"></div>
+          <p class="tip">「内置」为随包自带的题型，改动会另存到你本地数据目录（不动内置文件），可点「恢复内置默认」还原；「自定义」是你自己建的题型。</p>
+        </div>
+        <div class="qta-right">
+          <div class="qta-empty" id="qtaEmpty">← 左侧选择一个题型，右侧即可编辑它的答题环节与点评要素</div>
+          <div class="qta-form hidden" id="qtaForm">
+            <div class="grid2">
+              <div>
+                <label class="lbl">题型名称</label>
+                <input id="qtaName" class="inp" maxlength="20" placeholder="如：组织管理" />
+              </div>
+              <div>
+                <label class="lbl">别名（逗号分隔，可与题型名互通）</label>
+                <input id="qtaAka" class="inp" placeholder="如：组织协调,计划组织" />
+              </div>
+            </div>
+            <label class="lbl">适用场景</label>
+            <input id="qtaScene" class="inp" placeholder="如：让你负责组织一次活动 / 调研 / 培训 / 会议" />
+            <label class="lbl">特征关键词（逗号分隔，用于判定题型）</label>
+            <input id="qtaKeywords" class="inp" placeholder="如：组织,开展,筹划,流程,负责" />
+            <div class="qta-sechead">
+              <span>答题环节（顺序即作答顺序，最多 12 个）</span>
+              <button id="btnQtaAddStage" class="mini" title="在末尾追加一个环节">＋加环节</button>
+            </div>
+            <div class="qta-stages" id="qtaStages"></div>
+            <div class="qta-sechead"><span>点评要素（AI 点评本题型时的评价维度与失分提示）</span></div>
+            <label class="lbl">检查点（一行一条）</label>
+            <textarea id="qtaCheckpoints" class="inp ta" rows="5" placeholder="如：开头是否交代目的意义&#10;是否覆盖前中后完整流程"></textarea>
+            <label class="lbl">常见失分表现（一行一条）</label>
+            <textarea id="qtaFaults" class="inp ta" rows="6" placeholder="如：只讲活动当天，缺前期准备&#10;没有分工与时间节点"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot qta-foot">
+        <span class="muted" id="qtaMsg"></span>
+        <button id="btnQtaCopy" class="btn ghost" title="以当前题型为模板复制出一个自定义题型">复制为新题型</button>
+        <button id="btnQtaDelete" class="btn ghost" title="从题型列表里删除该题型">删除题型</button>
+        <button id="btnQtaReset" class="btn ghost" title="把该题型恢复为随包内置的默认结构">恢复内置默认</button>
+        <button id="btnQtaSave" class="btn primary" title="保存后立即生效，后续分析 / 点评 / 精简版都按新结构">保存并生效</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 开源许可弹层（第三方组件声明） -->
+<div class="modal" id="modalOss">
+  <div class="modal-box widest">
+    <div class="modal-head">
+      <h3>开源许可 · 第三方组件声明</h3>
+      <div class="mh-right">
+        <input id="ossFilter" class="oss-filter" type="search" placeholder="筛选组件 / 许可证 / 用途" title="输入关键字即时筛选">
+        <select id="ossLicSel" class="oss-filter oss-sel" title="按许可证筛选"><option value="">全部许可证</option></select>
+        <button id="btnOssDir" class="btn ghost" type="button" title="用资源管理器打开声明文件所在目录">打开声明目录</button>
+        <button class="x modal-x" data-close type="button" title="关闭（Esc）" aria-label="关闭">×</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <p class="tip" id="ossHead">正在读取第三方组件清单…</p>
+      <div class="oss-table-wrap">
+        <table class="oss-table">
+          <thead><tr><th style="width:190px">组件</th><th style="width:96px">版本</th><th style="width:150px">许可证</th><th>在软件中的用途</th><th style="width:52px">上游</th></tr></thead>
+          <tbody id="ossBody"><tr><td colspan="5" class="tip">加载中…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="divider">许可证全文</div>
+      <div class="oss-lic-bar" id="ossLicBar"></div>
+      <pre id="ossLicText" class="oss-lic-text">在上方选择许可证查看全文</pre>
+      <p class="tip">分发本软件须随附 THIRD_PARTY_NOTICES.md 与 LICENSES 目录。其中 PyMuPDF 采用 AGPL-3.0：若闭源商业分发，需替换为宽松许可替代库或另行购买 Artifex 商业许可。</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" data-close type="button">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 历史记录弹层 -->
+<div class="modal" id="modalHistory">
+  <div class="modal-box wide">
+    <div class="modal-head"><h3>历史记录</h3><div class="mh-right"><button class="x modal-x" data-close type="button" title="关闭（Esc）" aria-label="关闭">×</button></div></div>
+    <div class="modal-body" id="historyBody">
+      <div class="hist-filter" id="histFilter">
+        <select id="histQtype" class="hf-sel" title="按题型筛选"><option value="">全部题型</option></select>
+        <select id="histStudent" class="hf-sel" title="按学生姓名筛选"><option value="">全部学生</option></select>
+        <span class="hf-lab">日期</span>
+        <input id="histD1" class="hf-date" type="date" title="起始日期（含）">
+        <span class="hf-dash">至</span>
+        <input id="histD2" class="hf-date" type="date" title="结束日期（含）">
+        <input id="histKw" class="hf-kw" type="search" placeholder="搜题干或逐字稿内容" title="关键词：题干或逐字稿命中（输入即搜）">
+        <button id="histClear" class="mini ghost" title="一键清除全部筛选条件">清除筛选</button>
+      </div>
+      <div class="hist-stat" id="histStat"></div>
+      <div class="hist-list" id="histList"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<!-- 快速记录面板：听记时随手记学生的问题，回车自动编号 -->
+<div class="qnote" id="qnotePanel" hidden>
+  <div class="qn-head" id="qnHead" title="按住拖动面板位置 · 双击复位">
+    <span class="qn-grip-dot"></span>
+    <span class="qn-title">快速记录</span>
+    <span class="qn-count" id="qnCount">0 条</span>
+    <span class="qn-head-tools">
+      <button id="qnMin" class="qn-ib" title="最小化 / 展开（缩小后不挡逐字稿）">—</button>
+      <button id="qnClose" class="qn-ib" title="收起面板（内容已自动保存）">×</button>
+    </span>
+  </div>
+  <div class="qn-body" id="qnBody">
+    <div class="qn-list" id="qnList"></div>
+    <div class="qn-foot">
+      <button id="qnAdd" class="mini primary-m" title="在末尾再加一条">＋ 加一行</button>
+      <button id="qnCopy" class="mini" title="把所有记录按 1. 2. 3. 复制到剪贴板">复制全部</button>
+      <button id="qnClear" class="mini" title="清空全部记录（会先确认）">清空</button>
+      <span class="qn-tip" id="qnTip">回车＝下一条并自动编号</span>
+    </div>
+  </div>
+  <i class="qn-resize" id="qnResize" title="拖动调整面板大小"></i>
+</div>
+<!-- 精简要点浮层：把精简版逐字稿压成按答题结构分组的要点关键词，可一键复制 -->
+<div class="ptnote" id="pointsPanel" hidden>
+  <div class="qn-head" id="ptHead" title="按住拖动面板位置 · 双击复位">
+    <span class="qn-grip-dot"></span>
+    <span class="qn-title">精简要点</span>
+    <span class="qn-count" id="ptMeta">未分析</span>
+    <span class="qn-head-tools">
+      <button id="ptMin" class="qn-ib" title="最小化 / 展开">—</button>
+      <button id="ptClose" class="qn-ib" title="关闭浮层（不影响已保存的内容）">×</button>
+    </span>
+  </div>
+  <div class="qn-body">
+    <div class="pt-src">
+      <div class="pt-src-head">
+        <span class="pt-label">学生作答（精简稿）</span>
+        <span class="pt-src-tools">
+          <button id="ptFetch" class="mini" title="取当前会话「精简版」里已纠错、去语气词后的逐字稿">取当前精简稿</button>
+          <button id="ptClearSrc" class="mini" title="清空输入框">清空</button>
+        </span>
+      </div>
+      <textarea id="ptText" class="pt-ta" spellcheck="false"
+        placeholder="点「取当前精简稿」自动填入已纠错、去语气词的学生逐字稿；也可以直接粘贴或手打作答文本"></textarea>
+      <div class="pt-src-foot">
+        <span id="ptSrcStat">0 字</span>
+        <span id="ptSrcStamp" class="pt-stamp" title="取稿时间：每次取的都是当时最新改好的精简稿"></span>
+        <label class="pt-chk" title="开启后若有 API Key 会调用 AI 优化关键词，失败自动回退本地规则">
+          <input type="checkbox" id="ptAi"> AI 优化
+        </label>
+        <label class="pt-chk" title="显示 / 隐藏参考要点对齐信息（答到 / 偏题 / 遗漏），关掉后只留纯要点清单">
+          <input type="checkbox" id="ptAlign" checked> 对齐标注
+        </label>
+      </div>
+    </div>
+    <div class="pt-run">
+      <button id="ptRun" class="btn primary">分析要点</button>
+      <span class="pt-note" id="ptNote">按本题答题结构分组，只保留关键词</span>
+      <span class="pt-align" id="ptAlignNote"></span>
+    </div>
+    <div class="pt-out" id="ptOut">
+      <div class="pt-empty" id="ptEmpty">点「分析要点」后，这里按答题结构分组显示要点关键词（审题 / 提观点 / 重分析 / 抓落实 / 结尾）</div>
+      <div class="pt-groups" id="ptGroups"></div>
+    </div>
+    <div class="pt-foot">
+      <button id="ptCopyBullet" class="mini primary-m" title="复制为每行一条的项目符号">复制为分行要点</button>
+      <button id="ptCopyPlain" class="mini" title="复制为每组一行的纯文本">复制为纯文本</button>
+      <span class="pt-tip" id="ptTip">每条要点 ≤20 字</span>
+    </div>
+  </div>
+  <i class="qn-resize" id="ptResize" title="拖动调整面板大小"></i>
+</div>
+<div id="ctxMenu" class="ctxmenu"></div>
+<div id="sentMenu" class="ctxmenu sentmenu" style="display:none"></div>
+
+<!-- ===== 手机扫码覆盖层：在桌面窗口内用 iframe 打开 /scan，不依赖新窗口 ===== -->
+<div class="modal scanlay" id="mScanLay" aria-hidden="true">
+  <div class="modal-box scan">
+    <div class="modal-head">
+      <h3>手机扫码 · 用手机 / 平板浏览器打开</h3>
+      <div class="mh-right">
+        <button class="x-txt" id="mScanOpenTab" title="在系统默认浏览器新标签打开 /scan">浏览器打开</button>
+        <button class="x" id="mScanClose" title="关闭（Esc）">×</button>
+      </div>
+    </div>
+    <div class="mscan-body">
+      <iframe id="mScanFrame" title="手机扫码入口" src="about:blank"></iframe>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+<script src="/static/desktop.js"></script>
+<script>
+/* 手机扫码覆盖层开关（独立于 app.js，不改动任何原有业务逻辑） */
+(function () {
+  var lay = document.getElementById('mScanLay');
+  var box = document.getElementById('mScanFrame');
+  var btn = document.getElementById('btnMobileScan');
+  if (!lay || !box || !btn) return;
+
+  /* /scan 同源加载，故可把 Esc 关闭也绑到 iframe 文档里（焦点在弹层内时父文档收不到按键） */
+  box.addEventListener('load', function () {
+    try {
+      var d = box.contentDocument;
+      if (d && !d.__escBound) {
+        d.__escBound = true;
+        d.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' || e.keyCode === 27) { e.preventDefault(); close(); }
+        });
+      }
+    } catch (e) {}
+  });
+
+  function open() {
+    box.src = '/scan?_t=' + Date.now();
+    lay.classList.add('open');
+    lay.setAttribute('aria-hidden', 'false');
+  }
+
+  function close() {
+    lay.classList.remove('open');
+    lay.setAttribute('aria-hidden', 'true');
+    /* 关闭后卸掉 iframe 内容，避免 /scan 的 5 秒轮询在后台持续请求；下次打开重新加载即最新状态 */
+    box.src = 'about:blank';
+  }
+
+  btn.addEventListener('click', open);
+  var x = document.getElementById('mScanClose');
+  if (x) x.addEventListener('click', close);
+  var ot = document.getElementById('mScanOpenTab');
+  if (ot) ot.addEventListener('click', function () { window.open('/scan', '_blank'); });
+  lay.addEventListener('click', function (e) { if (e.target === lay) close(); });
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === 'Escape' || e.keyCode === 27) && lay.classList.contains('open')) {
+      e.preventDefault();
+      close();
+    }
+  }, true);
+})();
+</script>
+</body>
+</html>

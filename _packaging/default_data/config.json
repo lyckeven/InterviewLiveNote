@@ -1,0 +1,11 @@
+{
+  "base_url": "https://api.deepseek.com",
+  "api_key": "",
+  "model": "deepseek-flash",
+  "temperature": 0.3,
+  "timeout": 120,
+  "enable_realtime": true,
+  "para_pause_gap": 1.5,
+  "para_max_sec": 55,
+  "para_max_chars": 240
+}
