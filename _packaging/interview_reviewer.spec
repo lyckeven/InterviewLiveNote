@@ -5,11 +5,14 @@
 import os
 from PyInstaller.utils.hooks import collect_all, collect_submodules
 
-PROJ = r"E:\Software\InterviewLiveNote"
-PKG = os.path.join(PROJ, "_packaging")
-MODEL_SRC = r"E:\Software\TMSpeech\external-recognizer\sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09"
-VAD_SRC = r"E:\Software\TMSpeech\external-recognizer\silero_vad.onnx"
-PUNCT_SRC = r"E:\Software\TMSpeech\external-recognizer\punct_int8\model.onnx"
+# 工程根目录：由 PyInstaller 注入的 SPECPATH（即本 spec 所在目录）向上推导，换机器无需改路径
+PROJ = os.path.dirname(os.path.abspath(SPECPATH))
+
+# 离线识别模型所在目录。可用环境变量 IR_MODEL_ROOT 覆盖；默认指向开发机已装好模型的 TMSpeech 目录。
+MODEL_ROOT = os.environ.get("IR_MODEL_ROOT") or r"E:\Software\TMSpeech\external-recognizer"
+MODEL_SRC = os.path.join(MODEL_ROOT, "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09")
+VAD_SRC = os.path.join(MODEL_ROOT, "silero_vad.onnx")
+PUNCT_SRC = os.path.join(MODEL_ROOT, "punct_int8", "model.onnx")
 
 datas = [
     (os.path.join(PROJ, "static"), "static"),
@@ -51,7 +54,7 @@ binaries += cr_binaries
 qr_hidden = collect_submodules("qrcode")
 
 # sherpa 的 DLL 需与 _sherpa_onnx.pyd 同目录，显式再放一份到包内 lib 目录
-SHERPA_LIB = r"E:\Software\TMSpeech\external-recognizer\WPy64-31700\python\Lib\site-packages\sherpa_onnx\lib"
+SHERPA_LIB = os.path.join(MODEL_ROOT, "WPy64-31700", "python", "Lib", "site-packages", "sherpa_onnx", "lib")
 datas += [
     (os.path.join(SHERPA_LIB, fn), os.path.join("sherpa_onnx", "lib"))
     for fn in ("onnxruntime.dll", "sherpa-onnx-c-api.dll", "sherpa-onnx-cxx-api.dll")

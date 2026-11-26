@@ -118,7 +118,7 @@ AIGC:
 - **精简要点历史回看按学生渲染**：`server.py` `/api/records/points`（约第 6489 行）增加 file/student 参数，取 st.get("id") 匹配学生段落再返回，前端请求带 &student=。
 - **题库 AI 优化按钮**：app.js btnAiOptSel / btnAiOptAllQ / btnAiOptUndo 齐备，ai_optimize_last 正常返回，bi-diff 对比与撤销逻辑在包内。
 - **导入题库可选仅本地解析或 AI 解析**：`server.py` /api/bank/import_start（约第 4452 行）支持 mode ai/local；/api/bank/import_pref（约第 4478 行）读写生效。
-- **本地解析支持陪练解析 PDF 格式**：`server.py` _read_record/_prepare_record（约第 6408/6418 行）对 PDF 走本地解析；实测陪练解析 PDF（C:\Users\23576\Desktop\备课稿\BaiduSyncdisk\面试粉笔\理论知识\2026年江西事业单位 ·陪练 解析.pdf）解析出 135 题，src_stat={ai:0, doc:135, local:0}，未发起任何 AI 请求。
+- **本地解析支持陪练解析 PDF 格式**：`server.py` _read_record/_prepare_record（约第 6408/6418 行）对 PDF 走本地解析；实测陪练解析 PDF（<备课资料目录>\2026年江西事业单位 ·陪练 解析.pdf）解析出 135 题，src_stat={ai:0, doc:135, local:0}，未发起任何 AI 请求。
 
 ### Changed
 - **题库外层搜索浮层样式统一**：static/app.js bankSearchInp/bankSearchPop 节点齐备，style.css qsPlace / qsWrap 等定位样式与 .qs-pop/.qs-wrap 整体统一。

@@ -9,6 +9,10 @@ _dev*.err
 temp/
 output/
 
+# ---- 离线模型（体积大，不入库，见 README「离线模型」）----
+models/
+*.onnx
+
 # ---- 打包产物 ----
 dist/
 build/

@@ -20,7 +20,7 @@ AIGC:
 双击桌面 **「面试听记」** 图标，或运行：
 
 ```
-E:\Software\InterviewLiveNote\启动面试听记.bat
+<项目根目录>\启动面试听记.bat
 ```
 
 浏览器会自动打开 `http://127.0.0.1:7788`。若已在运行，则只打开界面，不会重复启动服务。
@@ -120,7 +120,7 @@ E:\Software\InterviewLiveNote\启动面试听记.bat
 ## 六、目录结构
 
 ```
-E:\Software\InterviewLiveNote\
+<项目根目录>\
 ├─ 启动面试听记.bat        双击启动
 ├─ server.py              Flask 服务（端口 7788）
 ├─ asr_engine.py          系统内录采集 + VAD 断句 + SenseVoice 识别 + 标点
@@ -135,7 +135,7 @@ E:\Software\InterviewLiveNote\
 └─ logs\                  运行日志
 ```
 
-技术栈：Python 3.13（便携版）+ pyaudiowpatch（WASAPI Loopback）+ sherpa-onnx（SenseVoice int8 离线中文识别 + Silero VAD）+ Flask + 原生前端。识别模型复用 `E:\Software\TMSpeech\external-recognizer\` 下已装好的模型。
+技术栈：Python 3.13（便携版）+ pyaudiowpatch（WASAPI Loopback）+ sherpa-onnx（SenseVoice int8 离线中文识别 + Silero VAD）+ Flask + 原生前端。识别模型复用 `<模型目录>\` 下已装好的模型。
 
 ---
 
@@ -167,7 +167,7 @@ E:\Software\InterviewLiveNote\
 3. **点评结构改为时间 → 优点 → 问题**：`ai_client.py` 的点评/段落点评提示词与 `local_analyzer.py` 的输出模板同步改版，问题条目统一「问题 + 具体问题地点 + 改进建议」，问题清单取自粉笔五环节（审题 / 提观点 / 重分析 / 抓落实 / 结尾），段落点评先给出段落功能标签（表态 / 重分析-原因 / 抓落实-监管 / 结尾收束等）。
 4. **题库落地**：导入《2026年江西事业单位·陪练 解析》134 题，自动标注题型与答题要点（题型分布：应急应变 33、社会现象 28、组织管理 28、态度观点 17、人际关系 13、漫画类 5、现场模拟 5、串词讲故事 2、演讲类 1、其他 2）。
 
-**回滚**：改版前的 `server.py`、`static\app.js`、`static\index.html` 备份在 `E:\Software\InterviewLiveNote\_backup_20261117_v2\`，直接覆盖回去即可。
+**回滚**：改版前的 `server.py`、`static\app.js`、`static\index.html` 备份在 `<项目根目录>\_backup_20261117_v2\`，直接覆盖回去即可。
 
 ---
 
@@ -246,7 +246,51 @@ E:\Software\InterviewLiveNote\
 3. **题库外层搜索浮层样式统一**：static/app.js bankSearchInp/bankSearchPop 节点齐备，style.css qsPlace / qsWrap 等定位样式与 .qs-pop/.qs-wrap 整体统一。
 4. **题库 AI 优化按钮**：app.js btnAiOptSel / btnAiOptAllQ / btnAiOptUndo 齐备，ai_optimize_last 正常返回，bi-diff 对比与撤销逻辑在包内。
 5. **导入题库可选仅本地解析或 AI 解析**：`server.py` /api/bank/import_start（约第 4452 行）支持 mode ai/local；/api/bank/import_pref（约第 4478 行）读写生效。
-6. **本地解析支持陪练解析 PDF 格式**：`server.py` _read_record/_prepare_record（约第 6408/6418 行）对 PDF 走本地解析；实测陪练解析 PDF（C:\Users\23576\Desktop\备课稿\BaiduSyncdisk\面试粉笔\理论知识\2026年江西事业单位 ·陪练 解析.pdf）解析出 135 题，src_stat={ai:0, doc:135, local:0}，未发起任何 AI 请求。
+6. **本地解析支持陪练解析 PDF 格式**：`server.py` _read_record/_prepare_record（约第 6408/6418 行）对 PDF 走本地解析；实测陪练解析 PDF（<备课资料目录>\2026年江西事业单位 ·陪练 解析.pdf）解析出 135 题，src_stat={ai:0, doc:135, local:0}，未发起任何 AI 请求。
 7. **版本**：`launcher.py` APP_VERSION="2.5.1"（第 21 行）、`server.py` APP_VERSION="2.5.1"（第 27 行）、`static/index.html` 三处版本标识升至 v2.5.1；`_packaging/version_info.txt` filevers/prodvers=(2,5,1,0)、FileVersion='2.5.1.0'、ProductVersion='2.5.1'；`setup.iss` #define MyAppVersion "2.5.1"、OutputBaseFilename=面试点评器_安装程序_v2.5.1、VersionInfoVersion=2.5.1.0、SrcDir 改 dist251。回滚提示：本轮改动前版本已归档于 _backup_20261124_v9~v15，可按需取对应编号目录恢复。
 
 *（内容由AI生成，仅供参考）*
+
+---
+
+## 十六、许可证与第三方组件
+
+- 本仓库**原创源码**以 **MIT** 许可发布，详见 [LICENSE](LICENSE)。
+- 随包第三方组件的许可证与分发义务见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)，许可证全文位于 [LICENSES/](LICENSES/)。
+- 软件内「设置 → 关于 → 开源许可」可直接查看 26 个组件的名称、实测版本、SPDX 许可证与全文。
+- 需注意：分发的桌面版链接了 **PyMuPDF（AGPL-3.0）**，再分发该可执行文件须遵守 AGPL-3.0；若需闭源分发，请替换为许可兼容的 PDF 解析实现。
+- 本项目为教学辅助工具，AI 生成的点评与解析内容仅供参考，不作为考试评价依据。音频与逐字稿均在本机处理与存储，不上传第三方服务器（调用云端 AI 时仅发送文本）。
+
+## 十七、从 GitHub 获取与运行
+
+```bash
+git clone https://github.com/lyckeven/InterviewLiveNote.git
+cd InterviewLiveNote
+pip install -r requirements.txt
+python launcher.py
+```
+
+- 运行环境：Windows 10/11 x64 + Python 3.11 及以上（开发环境为 3.13.7）。系统内录依赖 WASAPI Loopback（`pyaudiowpatch`），因此只在 Windows 下可用。
+- 首次运行会在 `data/` 生成配置与题库（可用环境变量 `IR_DATA_DIR` 指定到其他目录）；填入 AI Key 后才能使用 AI 点评。
+- 也可双击 `启动面试听记.bat` 启动（可用 `IR_PYTHON` 指定解释器路径），`停止服务.bat` 用于结束占用 7788 端口的服务进程。
+
+### 离线模型
+
+转写链路需要三份模型，均不随仓库分发（体积 200MB+，`.gitignore` 已忽略 `models/`）：
+
+| 模型 | 用途 | 放置位置 |
+| --- | --- | --- |
+| `sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09/model.int8.onnx` | SenseVoice int8 离线中文识别 | `models/sense-voice/model.int8.onnx` |
+| `silero_vad.onnx` | 语音活动检测（VAD） | `models/silero_vad.onnx` |
+| `punct_int8/model.onnx` | CT-Transformer 标点恢复，缺失时退回轻量规则标点 | `models/punct/model.onnx` |
+
+也可用环境变量直接指定：`IR_MODEL_DIR`（识别模型目录）、`IR_VAD_MODEL`（VAD 文件）、`IR_PUNCT_MODEL`（标点模型文件）。三者都找不到时会回退到开发机上的固定路径，在其他机器上需自行放置模型，否则无法转写。
+
+注意：sherpa-onnx 的 C++ 侧按窄字符串打开文件，模型路径含中文等非 ASCII 字符会读不到模型，请放在纯 ASCII 路径下。
+
+### 自行打包
+
+1. 收集绿色版：`python -m PyInstaller --noconfirm --clean --distpath dist --workpath build _packaging/interview_reviewer.spec`，产物为 `dist/面试点评器/`。spec 内的工程根目录由 `SPECPATH` 自动推导，模型目录可用环境变量 `IR_MODEL_ROOT` 覆盖。
+2. 编译安装包：`ISCC /Qp _packaging/setup.iss`（需 Inno Setup 6），产物输出到 `output/`。`SrcDir`、`OutputDir` 均为相对路径，可分别用 `ISCC /DSrcDir=...` 覆盖。
+
+- 功能使用说明见 [使用文档.md](使用文档.md)，各版本变更见 [CHANGELOG.md](CHANGELOG.md)。

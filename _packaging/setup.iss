@@ -4,7 +4,10 @@
 #define MyAppVersion "2.6.0"
 #define MyAppPublisher "慕夕制作"
 #define MyAppExeName "面试点评器.exe"
-#define SrcDir "C:\Users\23576\AppData\Roaming\Tencent\Marvis\User\oAN1i2aHcBbJZcYHAnwVMiilQDpQ\workspace\conv_d6ce7376ecbe415d824e4b2dd6472477\temp\distv260\面试点评器"
+; 绿色版目录（相对本 iss 所在目录 = <工程根>/_packaging），可用 ISCC /DSrcDir=... 覆盖
+#ifndef SrcDir
+#define SrcDir "..\dist\面试点评器"
+#endif
 
 [Setup]
 AppId={{8F3A62C1-5B47-4C1E-9D0A-2E7C41B9F6A3}
@@ -18,9 +21,9 @@ DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 AllowNoIcons=yes
 PrivilegesRequired=lowest
-OutputDir=C:\Users\23576\AppData\Roaming\Tencent\Marvis\User\oAN1i2aHcBbJZcYHAnwVMiilQDpQ\workspace\conv_d6ce7376ecbe415d824e4b2dd6472477\output
+OutputDir=..\output
 OutputBaseFilename=面试点评器_安装程序_v2.6.0
-SetupIconFile=E:\Software\InterviewLiveNote\_packaging\app.ico
+SetupIconFile=app.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallDisplayName={#MyAppName} {#MyAppVersion}
 Compression=lzma2/max
