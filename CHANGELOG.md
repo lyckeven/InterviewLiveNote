@@ -228,3 +228,24 @@ AIGC:
 - 页面与静态资源：`/`（含 `modalOss` / `btnOpenOss`）、`/mobile`（含 `btnMoss`）、`static/app.js`、`static/mobile.js`、`static/style.css`、`static/mobile.css` 全部 200；`node --check` 对 `app.js`、`mobile.js` 均通过。
 
 *（内容由AI生成，仅供参考）*
+
+---
+
+## 仓库维护 - 2026-11-26
+
+### Added
+- 新增 `LICENSE`（MIT，覆盖本仓库原创源码），并说明第三方组件按其自身许可证分发、PyMuPDF 为 AGPL-3.0。
+- 新增 `.gitattributes`：源码与文档 LF、`*.bat` / `*.iss` 用 CRLF、图标与字体标记 binary。
+- 原 `面试点评器_v2.5.0_使用文档.md` 更名为 `使用文档.md`，标题去掉写死的旧版本号，补充版本基线说明。
+
+### Changed
+- `启动面试听记.bat` 改用 `%~dp0` 定位工程目录，解释器按 `IR_PYTHON` > 便携 Python > PATH 的 `pythonw` / `python` 顺序探测，不再写死开发机路径。
+- `_packaging/interview_reviewer.spec` 以 `SPECPATH` 推导工程根，识别 / VAD / 标点模型路径改由 `IR_MODEL_ROOT` 推导，`sherpa-onnx` 库目录缺失时跳过而非报错。
+- `_packaging/setup.iss` 的 `SrcDir` / `OutputDir` / `SetupIconFile` 改为相对路径（`..\dist\面试点评器`、`..\output`、`app.ico`）。
+- `.gitignore` 增加离线模型忽略项（`models/`、`*.onnx`），README 同步说明模型不入库。
+- README 新增「十六、许可证与第三方组件」「十七、从 GitHub 获取与运行」，标题统一为「面试点评器（InterviewLiveNote）」，目录结构补全到当前 45 个文件。
+- README / CHANGELOG / 题库元数据中的本机绝对路径脱敏为 `<项目根目录>` / `<模型目录>` / `<备课资料目录>` / `<用户目录>`。
+- 仓库元数据：简介改为不含版本号的通用描述，topics 设为 asr / speech-recognition / sherpa-onnx / interview / civil-service-exam / education / desktop-app / flask / python / pyinstaller。
+
+### 分发
+- Release v2.6.0 附 Windows 安装包（约 303 MB，Inno Setup 中文向导），绿色版因体积过大不随 Release 提供，可按 README「自行打包」生成。
