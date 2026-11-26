@@ -147,7 +147,7 @@ AIGC:
 ├─ CHANGELOG.md            版本变更记录
 ├─ LICENSE                 本仓库原创源码的 MIT 许可证
 ├─ requirements.txt        运行依赖
-├─ models\                离线模型（不入库，见「十七、离线模型」）
+├─ models\                离线模型（不入库，见「十七、从 GitHub 获取与运行」→ 离线模型）
 ├─ data\                  首次运行自动生成
 │  ├─ config.json         AI 配置
 │  ├─ bank\               题库
@@ -155,7 +155,7 @@ AIGC:
 └─ logs\                  运行日志
 ```
 
-技术栈：Python 3.13（便携版）+ pyaudiowpatch（WASAPI Loopback）+ sherpa-onnx（SenseVoice int8 离线中文识别 + Silero VAD）+ Flask + 原生前端。离线识别模型放在 `models\` 下，或用环境变量 `IR_MODEL_DIR` / `IR_VAD_MODEL` / `IR_PUNCT_MODEL` 指定（见「十七、离线模型」）。
+技术栈：Python 3.13（便携版）+ pyaudiowpatch（WASAPI Loopback）+ sherpa-onnx（SenseVoice int8 离线中文识别 + Silero VAD）+ Flask + 原生前端。离线识别模型放在 `models\` 下，或用环境变量 `IR_MODEL_DIR` / `IR_VAD_MODEL` / `IR_PUNCT_MODEL` 指定（见「十七、从 GitHub 获取与运行」→ 离线模型）。
 
 ---
 
@@ -291,7 +291,7 @@ python launcher.py
 ```
 
 - 运行环境：Windows 10/11 x64 + Python 3.11 及以上（开发环境为 3.13.7）。系统内录依赖 WASAPI Loopback（`pyaudiowpatch`），因此只在 Windows 下可用。
-- 首次运行会在 `data/` 生成配置与题库（可用环境变量 `IR_DATA_DIR` 指定到其他目录）；填入 AI Key 后才能使用 AI 点评。
+- 首次运行会在 `data/` 生成配置与题库（可用环境变量 `IR_DATA_DIR` 指定到其他目录，打包版默认为 `%LOCALAPPDATA%\InterviewReviewer\data`，卸载不丢数据）；填入 AI Key 后才能使用 AI 点评。
 - 也可双击 `启动面试听记.bat` 启动（可用 `IR_PYTHON` 指定解释器路径），`停止服务.bat` 用于结束占用 7788 端口的服务进程。
 
 ### 离线模型
