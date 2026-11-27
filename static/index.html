@@ -11,7 +11,7 @@
 <div class="apptitlebar" id="appTitleBar">
   <span class="atb-logo" aria-hidden="true">面</span>
   <span class="atb-name">面试点评器</span>
-  <span class="atb-sub">v2.6.0 · 慕夕制作</span>
+  <span class="atb-sub">v2.7.0 · 慕夕制作</span>
   <span class="atb-drag" id="atbDrag" title="按住拖动窗口，双击最大化/还原"></span>
   <span class="atb-btns">
     <button class="atb-btn" id="btnWinMin" title="最小化" aria-label="最小化"><svg viewBox="0 0 12 12"><path d="M2 6h8"/></svg></button>
@@ -35,7 +35,7 @@
 <header class="topbar">
   <div class="brand">
     <span class="dot" id="statusDot"></span>
-    <span class="title">面试点评器</span><span class="ver">v2.6.0 · 慕夕制作</span>
+    <span class="title">面试点评器</span><span class="ver">v2.7.0 · 慕夕制作</span>
     <span class="state" id="stateText">待机</span>
   </div>
 
@@ -126,7 +126,7 @@
           <button id="btnImportDocx" class="mini" title="选 Word(.docx) / PDF / 文本，可一次选多个文件，解析后先进预览列表">导入 Word/PDF</button>
         </div>
       </div>
-      <input type="file" id="bankFile" accept=".docx,.pdf,.txt,.md,.csv" multiple style="display:none" />
+      <input type="file" id="bankFile" accept=".docx,.pdf,.txt,.md,.csv,.json" multiple style="display:none" />
       <div id="bankBackBar" class="bank-backbar" style="display:none">
         <button id="btnBankBack" class="mini">← 返回题库列表</button>
         <span id="bankCurName" class="bcn"></span>
@@ -251,16 +251,17 @@
   <div class="modal-box">
     <div class="modal-head"><h3>导入题库（文本 / JSON）</h3><div class="mh-right"><button class="x modal-x" data-close type="button" title="关闭（Esc）" aria-label="关闭">×</button></div></div>
     <div class="modal-body">
-      <p class="tip">支持两种格式：<br />
+      <p class="tip">支持三种写法：<br />
         1) 纯文本：每题以「1. 」或「第1题」开头，<code>参考要点：</code> / <code>答题思路：</code> 引出要点，多题之间可用一行 <code>===</code> 分隔；<br />
-        2) JSON 数组：<code>[{"question":"题干","qtype":"综合分析","ref":"要点"}]</code>
+        2) JSON 数组：<code>[{"question":"题干","qtype":"综合分析","ref":"要点"}]</code>；<br />
+        3) 题库模板：点右下「下载模板」拿到 <code>题库模板.json</code>（含两题示例与八个字段说明），改完后把内容整段粘到这里，或用「导入 Word/PDF」直接选这个 .json 文件。
       </p>
       <label class="lbl">题库名称</label>
       <input id="bankName" class="inp" placeholder="如：结构化面试高频真题" />
       <label class="lbl">内容</label>
       <textarea id="bankText" class="inp ta mono" rows="12" placeholder="1. 某地推行干部下沉社区，有人说好，有人说形式主义，你怎么看？
 参考要点：辩证看待；下沉的初衷；形式主义的表现与成因；如何做实"></textarea>
-      <div class="modal-foot"><button id="btnDoImport" class="btn primary">导入</button></div>
+      <div class="modal-foot bar"><button id="btnBankTpl" class="mini" type="button" title="下载题库模板：题库模板.json，含两题示例与八个字段填写说明">下载模板</button><button id="btnDoImport" class="btn primary">导入</button></div>
     </div>
   </div>
 </div>
@@ -533,7 +534,7 @@
       <p class="tip" id="logSizeTip"></p>
       <div class="divider">关于</div>
       <div class="about" id="aboutBox">
-        <div><b>面试点评器</b> v2.6.0</div>
+        <div><b>面试点评器</b> v2.7.0</div>
         <div>作者：<b>慕夕制作</b></div>
         <div class="about-row">
           <span>项目地址：<a href="#" class="lnk" id="linkProject" title="在浏览器中打开项目主页">github.com/lyckeven/InterviewLiveNote</a></span>
