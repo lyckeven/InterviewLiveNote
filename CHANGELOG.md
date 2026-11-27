@@ -1,14 +1,3 @@
----
-AIGC:
-    Label: "1"
-    ContentProducer: 001191440300708461136T1XGW3
-    ProduceID: 085864f8e2380e58c14cbcb129ac0e68_7db729e4e81911f1aa8b525400dc9a98
-    ReservedCode1: sEbiGeUJiFXMbQSEqSVnqUUYkwt0mY6wYi2fNuIFWTjw4aqvgdWCTmK5ycOQGInYj5lgvbgLoh4JF9IDLhf8RtGLmPcraIBgGW75nBZNiedKC/eewUt5RzK4BBKRl29+cTp65GK65cw0zYjf/exmWEe2aydFtwNNoVdS/V9Zf+/+jORXBZqd+LT8fLY=
-    ContentPropagator: 001191440300708461136T1XGW3
-    PropagateID: 085864f8e2380e58c14cbcb129ac0e68_7db729e4e81911f1aa8b525400dc9a98
-    ReservedCode2: sEbiGeUJiFXMbQSEqSVnqUUYkwt0mY6wYi2fNuIFWTjw4aqvgdWCTmK5ycOQGInYj5lgvbgLoh4JF9IDLhf8RtGLmPcraIBgGW75nBZNiedKC/eewUt5RzK4BBKRl29+cTp65GK65cw0zYjf/exmWEe2aydFtwNNoVdS/V9Zf+/+jORXBZqd+LT8fLY=
----
-
 # 更新日志 (Changelog)
 
 本文件记录面试听记（InterviewLiveNote）自 v1.1.0 以来的全部已知版本改动，格式参照 [Keep a Changelog](https://keepachangelog.com/)。版本号基准取自项目根目录 `_packaging/version_info.txt` 与 `_packaging/setup.iss`。
@@ -118,7 +107,7 @@ AIGC:
 - **精简要点历史回看按学生渲染**：`server.py` `/api/records/points`（约第 6489 行）增加 file/student 参数，取 st.get("id") 匹配学生段落再返回，前端请求带 &student=。
 - **题库 AI 优化按钮**：app.js btnAiOptSel / btnAiOptAllQ / btnAiOptUndo 齐备，ai_optimize_last 正常返回，bi-diff 对比与撤销逻辑在包内。
 - **导入题库可选仅本地解析或 AI 解析**：`server.py` /api/bank/import_start（约第 4452 行）支持 mode ai/local；/api/bank/import_pref（约第 4478 行）读写生效。
-- **本地解析支持陪练解析 PDF 格式**：`server.py` _read_record/_prepare_record（约第 6408/6418 行）对 PDF 走本地解析；实测陪练解析 PDF（<备课资料目录>\2026年江西事业单位 ·陪练 解析.pdf）解析出 135 题，src_stat={ai:0, doc:135, local:0}，未发起任何 AI 请求。
+- **本地解析支持陪练解析 PDF 格式**：`server.py` _read_record/_prepare_record（约第 6408/6418 行）对 PDF 走本地解析；实测陪练解析 PDF（C:\Users\23576\Desktop\备课稿\BaiduSyncdisk\面试粉笔\理论知识\2026年江西事业单位 ·陪练 解析.pdf）解析出 135 题，src_stat={ai:0, doc:135, local:0}，未发起任何 AI 请求。
 
 ### Changed
 - **题库外层搜索浮层样式统一**：static/app.js bankSearchInp/bankSearchPop 节点齐备，style.css qsPlace / qsWrap 等定位样式与 .qs-pop/.qs-wrap 整体统一。
@@ -228,24 +217,3 @@ AIGC:
 - 页面与静态资源：`/`（含 `modalOss` / `btnOpenOss`）、`/mobile`（含 `btnMoss`）、`static/app.js`、`static/mobile.js`、`static/style.css`、`static/mobile.css` 全部 200；`node --check` 对 `app.js`、`mobile.js` 均通过。
 
 *（内容由AI生成，仅供参考）*
-
----
-
-## 仓库维护 - 2026-11-26
-
-### Added
-- 新增 `LICENSE`（MIT，覆盖本仓库原创源码），并说明第三方组件按其自身许可证分发、PyMuPDF 为 AGPL-3.0。
-- 新增 `.gitattributes`：源码与文档 LF、`*.bat` / `*.iss` 用 CRLF、图标与字体标记 binary。
-- 原 `面试点评器_v2.5.0_使用文档.md` 更名为 `使用文档.md`，标题去掉写死的旧版本号，补充版本基线说明。
-
-### Changed
-- `启动面试听记.bat` 改用 `%~dp0` 定位工程目录，解释器按 `IR_PYTHON` > 便携 Python > PATH 的 `pythonw` / `python` 顺序探测，不再写死开发机路径。
-- `_packaging/interview_reviewer.spec` 以 `SPECPATH` 推导工程根，识别 / VAD / 标点模型路径改由 `IR_MODEL_ROOT` 推导，`sherpa-onnx` 库目录缺失时跳过而非报错。
-- `_packaging/setup.iss` 的 `SrcDir` / `OutputDir` / `SetupIconFile` 改为相对路径（`..\dist\面试点评器`、`..\output`、`app.ico`）。
-- `.gitignore` 增加离线模型忽略项（`models/`、`*.onnx`），README 同步说明模型不入库。
-- README 新增「十六、许可证与第三方组件」「十七、从 GitHub 获取与运行」，标题统一为「面试点评器（InterviewLiveNote）」，目录结构补全到当前 45 个文件。
-- README / CHANGELOG / 题库元数据中的本机绝对路径脱敏为 `<项目根目录>` / `<模型目录>` / `<备课资料目录>` / `<用户目录>`。
-- 仓库元数据：简介改为不含版本号的通用描述，topics 设为 asr / speech-recognition / sherpa-onnx / interview / civil-service-exam / education / desktop-app / flask / python / pyinstaller。
-
-### 分发
-- Release v2.6.0 附 Windows 安装包（约 303 MB，Inno Setup 中文向导），绿色版因体积过大不随 Release 提供，可按 README「自行打包」生成。

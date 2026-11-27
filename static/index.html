@@ -535,6 +535,11 @@
       <div class="about" id="aboutBox">
         <div><b>面试点评器</b> v2.6.0</div>
         <div>作者：<b>慕夕制作</b></div>
+        <div class="about-row">
+          <span>项目地址：<a href="#" class="lnk" id="linkProject" title="在浏览器中打开项目主页">github.com/lyckeven/InterviewLiveNote</a></span>
+          <button id="btnCheckUpdate" class="btn ghost" type="button" title="查询 GitHub 最新 Release">检查更新</button>
+        </div>
+        <div class="tip upd-out" id="updOut" hidden></div>
         <div class="tip" id="aboutData">数据目录：--</div>
         <div class="oss-entry">
           <span class="tip">本软件使用 26 个第三方开源组件，遵循各自许可证分发。</span>
@@ -559,7 +564,7 @@
           </div>
           <input id="qtaFilter" class="inp qta-filter" placeholder="筛选题型名 / 别名" />
           <div class="qta-list" id="qtaList"></div>
-          <p class="tip">「内置」为随包自带的题型，改动会另存到你本地数据目录（不动内置文件），可点「恢复内置默认」还原；「自定义」是你自己建的题型。</p>
+          <p class="tip">「内置」指的是随包的<b>题型结构</b>（不是题库内容——题库不随软件内置，需自行导入或新建，首次启动题库为空）。改动会另存到你本地数据目录（不动内置文件），可点「恢复内置默认」还原；「自定义」是你自己建的题型。</p>
         </div>
         <div class="qta-right">
           <div class="qta-empty" id="qtaEmpty">← 左侧选择一个题型，右侧即可编辑它的答题环节与点评要素</div>

@@ -56,6 +56,11 @@ body{
 button,select,textarea,input{font:inherit; color:inherit}
 button{cursor:pointer; border:0; background:none}
 a{color:var(--accent2)}
+/* 设置 → 关于：项目地址 / 检查更新 */
+.lnk{color:var(--accent2); font-weight:600; text-decoration:none; word-break:break-all}
+.upd-out{margin-top:8px; line-height:1.7; overflow-wrap:anywhere}
+.upd-out.newer{color:var(--accent2)}
+.upd-out.bad{color:#d9534f}
 ::-webkit-scrollbar{width:8px; height:8px}
 ::-webkit-scrollbar-thumb{
   background:linear-gradient(145deg,var(--sh-d),var(--sh-l));

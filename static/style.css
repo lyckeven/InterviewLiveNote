@@ -567,6 +567,14 @@ select#deviceSel:focus{outline:none; box-shadow:var(--nz-in-s), 0 0 0 2px rgba(1
 /* ---------------- 开源许可面板（第三方组件声明） ---------------- */
 .oss-entry{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:8px}
 .oss-entry .tip{margin:0}
+/* 关于 → 项目地址 / 检查更新 */
+.about-row{display:flex; align-items:center; gap:10px; justify-content:space-between; flex-wrap:wrap; margin-top:6px}
+.about-row .btn{flex:0 0 auto}
+.lnk{color:var(--accent2); font-weight:600; text-decoration:none; cursor:pointer; word-break:break-all}
+.lnk:hover{text-decoration:underline}
+.upd-out{margin:6px 0 2px}
+.upd-out.newer{color:var(--accent2)}
+.upd-out.bad{color:#c0392b}
 .oss-filter{
   height:28px; padding:0 9px; border:1px solid var(--line); border-radius:8px;
   background:rgba(255,255,255,.72); color:var(--txt); font-size:12px; outline:none;

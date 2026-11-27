@@ -1757,7 +1757,7 @@ async function loadBanks() {
       empty.innerHTML =
         '<div class="be-ico">▤</div>' +
         '<div class="be-t">题库还是空的</div>' +
-        '<div class="be-d">内置题库已移除。可以导入现成的题目文本 / Word，或直接新建一道题——粘贴题干后会自动识别题型与答题结构，确认后写入题库。</div>' +
+        '<div class="be-d">题库不随软件内置，需自行导入或新建，首次启动题库为空。可以导入现成的题目文本 / Word，或直接新建一道题——粘贴题干后会自动识别题型与答题结构，确认后写入题库。</div>' +
         '<div class="be-btns">' +
           '<button class="mini primary-m" id="beNewQ">＋ 新建题目</button>' +
           '<button class="mini" id="beImportText">导入文本</button>' +
@@ -4351,6 +4351,103 @@ if ($('#btnCorrectAll')) {
     const box = $('#aboutData');
     if (box) box.textContent = '数据目录：' + (info.data_dir || '--');
   } catch (e) { /* 忽略 */ }
+})();
+
+// ---- 项目地址 & 检查 GitHub 更新（设置 → 关于） ----
+const PROJECT_PAGE = 'https://github.com/lyckeven/InterviewLiveNote';
+
+/* 打开外链：优先走后端（系统默认浏览器），后端拒绝时退回 window.open */
+async function openExternal(url) {
+  try {
+    const r = await fetch('/api/open/url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (j && j.ok) return true;
+    throw new Error((j && j.msg) || '打开失败');
+  } catch (e) {
+    try { window.open(url, '_blank', 'noopener'); return true; } catch (_) {
+      toast('无法打开浏览器，请手动访问 ' + url);
+      return false;
+    }
+  }
+}
+
+(function bindAboutUpdate() {
+  const link = $('#linkProject');
+  if (link) {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      openExternal(PROJECT_PAGE);
+    });
+  }
+
+  const btn = $('#btnCheckUpdate');
+  const out = $('#updOut');
+  if (!btn || !out) return;
+  let busy = false;
+
+  function show(html, cls) {
+    out.hidden = false;
+    out.className = 'tip upd-out' + (cls ? ' ' + cls : '');
+    out.innerHTML = html;
+  }
+
+  function lnkGo(url, text) {
+    const a = document.createElement('a');
+    a.href = '#';
+    a.className = 'lnk';
+    a.textContent = text;
+    a.addEventListener('click', (e) => { e.preventDefault(); openExternal(url); });
+    return a;
+  }
+
+  btn.addEventListener('click', async () => {
+    if (busy) return;
+    busy = true;
+    const old = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '检查中…';
+    show('正在向 GitHub 查询最新版本…', '');
+    try {
+      const r = await fetch('/api/update/check', { cache: 'no-store' });
+      const d = await r.json().catch(() => ({}));
+      if (!d || d.ok !== true) {
+        show('检查失败：' + esc((d && d.msg) || '网络不可用或接口异常'), 'bad');
+      } else if (d.has_update) {
+        const line = document.createElement('div');
+        line.innerHTML = '发现新版本 <b>v' + esc(d.latest) + '</b>（当前 v' + esc(d.current) + '）';
+        out.hidden = false;
+        out.className = 'tip upd-out newer';
+        out.innerHTML = '';
+        out.appendChild(line);
+        const go = document.createElement('div');
+        go.appendChild(document.createTextNode('下载地址：'));
+        go.appendChild(lnkGo(d.url || (PROJECT_PAGE + '/releases/latest'), '前往 GitHub Releases 下载'));
+        out.appendChild(go);
+        if (d.published_at) {
+          const t = document.createElement('div');
+          t.textContent = '发布时间：' + String(d.published_at).slice(0, 10);
+          out.appendChild(t);
+        }
+      } else {
+        show('已是最新版本（当前 v' + esc(d.current) + '，GitHub 最新 v' + esc(d.latest) + '）', '');
+      }
+      if (d && d.ok === true) {
+        const foot = document.createElement('div');
+        foot.appendChild(lnkGo(PROJECT_PAGE, '打开项目主页'));
+        out.appendChild(foot);
+      }
+    } catch (e) {
+      show('检查失败：' + esc(e && e.message ? e.message : String(e)), 'bad');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = old;
+      busy = false;
+    }
+  });
 })();
 
 

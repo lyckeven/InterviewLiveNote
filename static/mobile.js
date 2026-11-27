@@ -4631,5 +4631,76 @@
       });
     }
     if ($('btnMoss')) $('btnMoss').addEventListener('click', mossOpen);
+
+    // ---- 项目地址 & 检查更新 ----
+    var MPROJ = 'https://github.com/lyckeven/InterviewLiveNote';
+    function mOpenUrl(url) {
+      fetch('/api/open/url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: url })
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        if (j && j.ok) return;
+        window.open(url, '_blank', 'noopener');
+      }).catch(function () {
+        try { window.open(url, '_blank', 'noopener'); } catch (e) { toast('请手动访问 ' + url); }
+      });
+    }
+    if ($('mlinkProject')) {
+      $('mlinkProject').addEventListener('click', function (e) {
+        e.preventDefault();
+        mOpenUrl(MPROJ);
+      });
+    }
+    var mUpdOut = $('settingsUpd');
+    function mUpdShow(html, cls) {
+      if (!mUpdOut) return;
+      mUpdOut.hidden = false;
+      mUpdOut.className = 'dim upd-out' + (cls ? ' ' + cls : '');
+      mUpdOut.innerHTML = html;
+    }
+    function mUpdLink(url, text) {
+      var a = document.createElement('a');
+      a.href = '#';
+      a.className = 'lnk';
+      a.textContent = text;
+      a.addEventListener('click', function (e) { e.preventDefault(); mOpenUrl(url); });
+      return a;
+    }
+    if ($('btnMCheck')) {
+      var mChecking = false;
+      $('btnMCheck').addEventListener('click', function () {
+        if (mChecking) return;
+        mChecking = true;
+        var btn = $('btnMCheck');
+        var old = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = '检查中…';
+        mUpdShow('正在向 GitHub 查询最新版本…', '');
+        fetch('/api/update/check', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
+          if (!d || d.ok !== true) {
+            mUpdShow('检查失败：' + esc((d && d.msg) || '网络不可用或接口异常'), 'bad');
+            return;
+          }
+          if (d.has_update) {
+            mUpdShow('发现新版本 <b>v' + esc(d.latest) + '</b>（当前 v' + esc(d.current) + '）', 'newer');
+            var row = document.createElement('div');
+            row.appendChild(mUpdLink(d.url || (MPROJ + '/releases/latest'), '前往 Releases 下载'));
+            mUpdOut.appendChild(row);
+          } else {
+            mUpdShow('已是最新版本（当前 v' + esc(d.current) + '，GitHub 最新 v' + esc(d.latest) + '）', '');
+          }
+          var foot = document.createElement('div');
+          foot.appendChild(mUpdLink(MPROJ, '打开项目主页'));
+          mUpdOut.appendChild(foot);
+        }).catch(function (e) {
+          mUpdShow('检查失败：' + esc(e && e.message ? e.message : String(e)), 'bad');
+        }).then(function () {
+          btn.disabled = false;
+          btn.textContent = old;
+          mChecking = false;
+        });
+      });
+    }
   });
 })();

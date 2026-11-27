@@ -31,6 +31,20 @@ APP_AUTHOR = "慕夕制作"
 APP_VERSION = "2.6.0"
 IS_FROZEN = bool(getattr(sys, "frozen", False))
 
+# ---- 项目地址与更新检查（设置 → 关于 → 检查更新）----
+PROJECT_URL = "https://github.com/lyckeven/InterviewLiveNote"
+GITHUB_REPO = "lyckeven/InterviewLiveNote"
+GITHUB_API = "https://api.github.com/repos/" + GITHUB_REPO
+UPDATE_TIMEOUT = 8           # 查询 GitHub 的超时秒数，超时即判定检查失败
+# 允许用系统浏览器打开的外链域名白名单（只放行 GitHub 项目页与 Release 资源）
+OPEN_URL_HOSTS = (
+    "github.com",
+    "www.github.com",
+    "api.github.com",
+    "objects.githubusercontent.com",
+    "release-assets.githubusercontent.com",
+)
+
 
 def _resource_base():
     """打包后资源根目录（PyInstaller _MEIPASS），开发时为源码目录"""
@@ -88,8 +102,8 @@ SESSION_PATH = os.path.join(DATA, "session_current.json")
 def _seed_user_data():
     """首次运行时把随包内置的配置/题型复制到用户数据目录（不覆盖已有文件）
 
-    内置题库已移除：不再向新用户复制任何题目数据，首次启动题库为空；
-    用户手动导入或新建的题库照常保存在 data/bank 下，不受此逻辑影响。
+    题库不随软件内置：不再向新用户复制任何题目数据，首次启动题库为空，
+    需用户自行导入或新建；用户手动导入或新建的题库照常保存在 data/bank 下。
     """
     seed = os.path.join(BASE, "default_data")
     if not os.path.isdir(seed):
@@ -4759,7 +4773,7 @@ def api_bank_add_item():
 def api_bank():
     out = []
     if not os.path.isdir(BANK_DIR):
-        # 内置题库已移除：首次启动没有任何题库，前端据此显示空状态引导
+        # 题库不随软件内置：首次启动没有任何题库，前端据此显示空状态引导
         return jsonify({"banks": [], "empty": True})
     for fn in sorted(os.listdir(BANK_DIR)):
         if fn.endswith(".json"):
@@ -6456,7 +6470,90 @@ def api_appinfo():
         "punct_model": PUNCT_MODEL,
         "punct_ready": bool(getattr(engine.punct, "ok", False)),
         "partial_ui": True,
+        "project_url": PROJECT_URL,
+        "github_repo": GITHUB_REPO,
     })
+
+
+# ---------------- 版本更新检查 ----------------
+def _ver_key(v):
+    """把 2.6.0 / v2.6.0 之类的版本串转成可比较的元组（非数字部分忽略）"""
+    nums = re.findall(r"\d+", str(v or ""))
+    return tuple(int(x) for x in nums[:4]) if nums else ()
+
+
+@app.route("/api/update/check")
+def api_update_check():
+    """查询 GitHub 最新 Release，与本地 APP_VERSION 比较。
+
+    约定：网络异常、限流、仓库无 Release 等情况一律返回 ok=false + msg，
+    前端只做提示，不影响软件其它功能。
+    """
+    cur = APP_VERSION
+    headers = {
+        "User-Agent": "%s/%s" % (GITHUB_REPO, cur),
+        "Accept": "application/vnd.github+json",
+    }
+    try:
+        r = requests.get(GITHUB_API + "/releases/latest", headers=headers, timeout=UPDATE_TIMEOUT)
+    except requests.exceptions.Timeout:
+        return jsonify({"ok": False, "current": cur, "msg": "连接 GitHub 超时（%d 秒），请稍后重试" % UPDATE_TIMEOUT})
+    except Exception as e:
+        return jsonify({"ok": False, "current": cur, "msg": "网络不可用：%s" % e})
+    try:
+        if r.status_code == 404:
+            return jsonify({"ok": False, "current": cur, "msg": "该仓库暂无 Release 记录"})
+        if r.status_code in (403, 429):
+            return jsonify({"ok": False, "current": cur, "msg": "GitHub 接口访问受限（限流），请稍后再试"})
+        if r.status_code != 200:
+            return jsonify({"ok": False, "current": cur, "msg": "GitHub 返回状态码 %s" % r.status_code})
+        d = r.json() or {}
+    except Exception as e:
+        return jsonify({"ok": False, "current": cur, "msg": "解析 GitHub 返回失败：%s" % e})
+
+    latest = str(d.get("tag_name") or d.get("name") or "").strip().lstrip("vV")
+    if not latest:
+        return jsonify({"ok": False, "current": cur, "msg": "未能从 GitHub 返回中读取版本号"})
+    notes = str(d.get("body") or "").strip()
+    if len(notes) > 600:
+        notes = notes[:600] + "…"
+    return jsonify({
+        "ok": True,
+        "current": cur,
+        "latest": latest,
+        "has_update": bool(_ver_key(latest) > _ver_key(cur)),
+        "url": str(d.get("html_url") or (PROJECT_URL + "/releases/latest")),
+        "published_at": str(d.get("published_at") or ""),
+        "name": str(d.get("name") or ""),
+        "notes": notes,
+    })
+
+
+@app.route("/api/open/url", methods=["POST"])
+def api_open_url():
+    """用系统默认浏览器打开外链（仅 http/https + 域名白名单）"""
+    body = request.get_json(force=True, silent=True) or {}
+    url = str(body.get("url") or "").strip()
+    if not url:
+        return jsonify({"ok": False, "msg": "缺少 url 参数"}), 400
+    try:
+        from urllib.parse import urlparse
+        u = urlparse(url)
+    except Exception:
+        return jsonify({"ok": False, "msg": "链接格式不合法"}), 400
+    if u.scheme not in ("http", "https") or not u.hostname:
+        return jsonify({"ok": False, "msg": "仅支持 http/https 链接"}), 400
+    if u.hostname.lower() not in OPEN_URL_HOSTS:
+        return jsonify({"ok": False, "msg": "该域名不在允许打开的白名单内"}), 400
+    try:
+        if os.name == "nt":
+            os.startfile(url)
+        else:
+            import webbrowser
+            webbrowser.open(url)
+        return jsonify({"ok": True, "url": url})
+    except Exception as e:
+        return jsonify({"ok": False, "msg": "打开浏览器失败：%s" % e}), 500
 
 
 # ---------------- AI 点评 ----------------
