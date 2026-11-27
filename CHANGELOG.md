@@ -16,7 +16,6 @@
 - `_migrate_models()` 扩展为同时迁移识别、VAD、标点三个模型到 ASCII 缓存目录，规避非 ASCII 路径下 `No graph was found in the protobuf`。
 - 量化实验证明 int8 与 fp32 整段 CER 仅差 2.77%，故继续使用 int8 模型。
 
-*（内容由AI生成，仅供参考）*
 > **回滚提示**：本版本改动前的代码归档于 `_backup_20261117_v2`（含识别/VAD/标点三套模型迁移逻辑），如需恢复可从中提取。
 
 ---
@@ -33,7 +32,6 @@
 - **结构环节标注**：`stage_of()` 输出五环节（审题/提观点/重分析/抓落实/结尾）+ 小标题（表态、原因、影响、对策、宣传、监管、考核、收束等），判定优先级为 段首复述题干→结尾语→提观点强信号→已有段落标签（沿用 `paragraphizer.TAG_RULES` 与 AI 回写的 `【段落标签】`）→关键词计分→位置兜底，与既有段落标签逻辑一致。
 - **版本**：`server.py` APP_VERSION 升至 1.2.0。
 
-*（内容由AI生成，仅供参考）*
 > **回滚提示**：本版本改动前的代码归档于 `_backup_20261117_v5`，如需恢复可从中提取。
 
 ---
@@ -51,7 +49,6 @@
 ### Changed
 - **版本**：`launcher.py` / `server.py` 的 APP_VERSION、`static/index.html` 关于页、`_packaging/version_info.txt`、`_packaging/setup.iss` 统一升至 2.3.0。
 
-*（内容由AI生成，仅供参考）*
 > **回滚提示**：本轮改动未单独建立备份目录；如需参考当时状态请查阅 `_backup_20261123_v7`（含 server.py/static/*/*.py 共 11 项源码）。
 
 ---
@@ -74,7 +71,6 @@
 ### Fixed
 - **自动切段点评去重与校准**：切片点评对重复切片与已合并切片自动跳过（相似度阈值 0.7 + 签名缓存），避免同一段重复点评。
 
-*（内容由AI生成，仅供参考）*
 > **回滚提示**：本版本改动前的代码归档于 `_backup_20261123_v8`，如需恢复可从中提取。
 
 ---
@@ -95,7 +91,6 @@
 ### Changed
 - **版本**：`server.py` / `launcher.py` 的 APP_VERSION、`static/index.html` 三处版本标识、`_packaging/version_info.txt`（FileVersion 2.5.0.0 / ProductVersion 2.5.0）、`_packaging/setup.iss`（MyAppVersion / VersionInfoVersion 2.5.0.0 / SrcDir=dist250）统一升至 2.5.0。
 
-*（内容由AI生成，仅供参考）*
 > **回滚提示**：本版本改动前的代码归档于 `_backup_20261124_v9`，如需恢复可从中提取。
 
 ---
@@ -116,9 +111,7 @@
 ### Fixed
 - （本轮以功能新增为主，无可报告缺陷修复。）
 
-*（内容由AI生成，仅供参考）*
 > **回滚提示**：本版本改动前的代码归档于 `_backup_20261124_v9`～`_backup_20261124_v15`，如需恢复可从该范围中提取。
-*（内容由AI生成，仅供参考）*
 
 ---
 
@@ -139,7 +132,6 @@
 - **题库 AI 优化长时间卡住无法中断**：`_aiopt_run` 改为分批 + 可中断（每批 `max_workers=_AIOPT_WORKERS`，`wait` 间隔 0.25 s 轮询 `job["cancel"]`；单题超过 `_AIOPT_TIMEOUT+30` 秒判失败并继续）。实测取消接口耗时 0.000 s，取消后 0.20 s 进入 `status=done / state=cancel`，提示「已停止：成功 X 题，未处理 Y 题」；正常场景 `state=ok`、5/5 题、耗时 1.5 s。
 - **题库编辑页与题目编辑页不一致**：见上「Changed」第三项，实测覆盖保存后 exam/structure/keys/ref 四项均写回原题。
 
-*（内容由AI生成，仅供参考）*
 > **打包产物**：安装包 `面试点评器_安装程序_v2.5.2.exe`（300.6 MB）、绿色版 `面试点评器_绿色版_v2.5.2.zip`（339 MB / 1463 项）、源码包 `面试点评器_源码_v2.5.2.zip`（0.45 MB / 41 项）。绿色版隔离实测启动通过，`/api/appinfo` 返回 version=2.5.2、frozen=true，`/api/logs/info` 正常。
 
 ## [2.5.4] - 2026-11-26
@@ -151,7 +143,6 @@
 - **平板模式改三栏**：`body[data-mode="tablet"]` 由原双列改为与电脑版同款三栏——左栏题库、中列逐字稿、右栏点评与会话；宽度自适应，窄平板左栏 176–208 px，≥1140 px 右栏分双列并 sticky，760–1139 px 右栏单列；手机竖屏仍保持标签页形态。`static/mobile.css` 新增对应断点，实测 5 种尺寸无横向溢出、元素零压盖。
 - **版本**：`server.py`、`launcher.py` 的 `APP_VERSION="2.5.4"`，`static/index.html` 三处版本标识升至 v2.5.4；`_packaging/version_info.txt` filevers/prodvers=(2,5,4,0)、FileVersion='2.5.4.0'、ProductVersion='2.5.4'；`_packaging/setup.iss` MyAppVersion "2.5.4"、OutputBaseFilename=面试点评器_安装程序_v2.5.4、VersionInfoVersion=2.5.4.0、SrcDir 改 dist254。
 
-*（内容由AI生成，仅供参考）*
 
 ---
 
@@ -172,7 +163,6 @@
 - **「被困在公用网络」的手机连不上问题**：此前本机仅存在 `Python` 程序的「公用」入站规则，切到其它 Wi-Fi 或改网络类别即被拦。实测 `status` 返回 `level=partial`、`text` 明示「仅部分网络类型放行（公用）」；`allow` 后创建 `profile=Any` 规则、`remove` 后回到 `removed=1 / left=0`，规则增删不影响系统其它防火墙项。
 - **端口被其它程序占用时误判「已在运行」**：`launcher.py` 的 `_probe()` 原仅判断 `/api/appinfo` 是否返回 200，端口上任意 HTTP 服务都会让程序认定自己是重复实例并直接退出。改为解析返回体并校验 `name == APP_NAME`，非本应用一律视为未运行、继续正常启动（实测：其它服务 → False、无服务 → False、本应用 → True）。
 
-*（内容由AI生成，仅供参考）*
 > **打包产物**：安装包 `面试点评器_安装程序_v2.5.3.exe`（303.2 MB）、绿色版 `面试点评器_绿色版_v2.5.3.zip`（342.9 MB / 1592 项）、源码包 `面试点评器_源码_v2.5.3.zip`（0.48 MB / 45 项）。frozen 版实测 `/api/appinfo` 返回 version=2.5.3、frozen=true，`/api/system/firewall` 返回 200 且正确识别放行对象为 `面试点评器.exe`。
 
 ---
@@ -196,7 +186,6 @@
 - 中途停止实测（4 题）：第 1 题完成后立即停止，返回 `state=cancel`、`done=1`、`ok_n=1`、`total=4`、`msg="已停止：成功 1 题，未处理 3 题"`，逐题状态 `['ok','skip','wait','wait']`。
 - 页面可达性：`/`、`/mobile`、`static/mobile.js`、`static/app.js`、`static/mobile.css`、`static/style.css` 全部 200；`node --check` 对 `app.js`、`mobile.js` 均通过；前端引用的 DOM id 与 HTML 逐一核对通过（动态创建的 id 已排除）。
 
-*（内容由AI生成，仅供参考）*
 
 ---
 
@@ -216,4 +205,22 @@
 - `/api/oss/license/AGPL-3.0` 返回 34020 字符全文（首行 `GNU AFFERO GENERAL PUBLIC LICENSE`）；`/api/oss/license/MPL-2.0` 返回 16727 字符；不存在的许可证返回 404 且提示「未知许可证」。
 - 页面与静态资源：`/`（含 `modalOss` / `btnOpenOss`）、`/mobile`（含 `btnMoss`）、`static/app.js`、`static/mobile.js`、`static/style.css`、`static/mobile.css` 全部 200；`node --check` 对 `app.js`、`mobile.js` 均通过。
 
-*（内容由AI生成，仅供参考）*
+## [2.7.0] - 2026-11-27
+
+### Added
+- **题库导入模板**：项目根新增 `templates/题库模板.json`（顶层 `name` + `items`，单题字段 `question` / `qtype` / `qtype_reason` / `exam` / `structure` / `keys` / `ref` / `source`，附 `_填写说明` 与两道示例题：社会现象「落叶缓扫」、组织管理「基层治理典型案例」）。`server.py` 新增 `GET /api/bank/template`（`?inline=1` 为页面内预览），模板按源码态 `templates/` 与打包后资源目录两级查找，文件缺失时回退最小内置模板；`_packaging/interview_reviewer.spec` 的 `datas` 收录 `templates` 目录随包分发；`static/index.html` 题库面板与 `static/app.js` 增加「下载模板」入口（`#btnBankTpl`，直接下载 `题库模板.json`）。
+
+### Changed
+- **应用图标**：`_packaging/app.ico` 换为与软件风格一致的新图标——白色麦克风 + 右侧声波弧线、青绿渐变（`#22c9b6 → #087c6c`）圆角方块底、新拟态内高光，圆角半径约 23.5%；含 16/20/24/32/40/48/64/96/128/256 共 10 个尺寸，旧图标备份为 `_packaging/app.ico.bak_v260`。exe、安装包、快捷方式与卸载项图标同步。
+- **README 核对修正**：段落按钮文案按代码实际为「结构/点评」（原文写作「结构·点评」），并补充「段落右键可直接打开同一菜单」；端口说明按代码实际改写——桌面壳启动时 `pick_port(7788)` 最多顺延 40 个端口，手机端 HTTPS 端口优先取该端口 +1、被占用再顺延，直接 `python server.py` 起服务不顺延、只认 `IR_PORT`（默认 7788）。
+- **`_packaging/setup.iss` 改为相对路径**：`SrcDir` 默认 `..\dist\面试点评器`、`OutputDir` 默认 `..\output`、`SetupIconFile=app.ico`，两者均可用 ISCC 命令行 `/DSrcDir=`、`/DOutputDir=` 覆盖，仓库 clone 后可直接编译。
+- **版本**：`server.py`、`launcher.py` 的 `APP_VERSION="2.7.0"`；`static/index.html` 三处版本标识升至 v2.7.0；`_packaging/version_info.txt` filevers/prodvers=(2,7,0,0)、FileVersion='2.7.0.0'、ProductVersion='2.7.0'；`_packaging/setup.iss` MyAppVersion "2.7.0"、OutputBaseFilename=面试点评器_安装程序_v2.7.0、VersionInfoVersion=2.7.0.0。
+
+### Fixed
+- **Release 资产文件名**：GitHub Releases 上传的安装包资产名修正为 `面试点评器_安装程序_v2.7.0.exe`（此前上传后显示为乱码短名），上传脚本改为显式指定 ASCII 安全的资产名并校验返回的 `name` 字段。
+
+### 验证
+- 绿色版实测（PyInstaller onedir）：`/api/appinfo` 返回 `version=2.7.0`、`frozen=true`、`project_url` 正确；`/api/bank/template` 200 / 13048 字节；`/api/mobile/qrcode.png` 200 / image/png；`/api/mobile/info` 的 `https.enabled=true`、证书 `cert_days_left` 正常；`/api/update/check` 返回 `ok=true`、`current=2.7.0`。
+- 模板回环：用模板示例题 `POST /api/bank/import` 入库成功（2 题），确认字段与真实题库一致后清理测试数据。
+
+---
