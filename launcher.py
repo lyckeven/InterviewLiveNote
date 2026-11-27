@@ -18,7 +18,7 @@ import traceback
 
 APP_NAME = "面试点评器"
 APP_AUTHOR = "慕夕制作"
-APP_VERSION = "2.6.0"
+APP_VERSION = "2.7.0"
 WINDOW_TITLE = "%s · %s" % (APP_NAME, APP_AUTHOR)
 
 WIN_W, WIN_H = 1320, 860
