@@ -217,7 +217,7 @@
 - **版本**：`server.py`、`launcher.py` 的 `APP_VERSION="2.7.0"`；`static/index.html` 三处版本标识升至 v2.7.0；`_packaging/version_info.txt` filevers/prodvers=(2,7,0,0)、FileVersion='2.7.0.0'、ProductVersion='2.7.0'；`_packaging/setup.iss` MyAppVersion "2.7.0"、OutputBaseFilename=面试点评器_安装程序_v2.7.0、VersionInfoVersion=2.7.0.0。
 
 ### Fixed
-- **Release 资产文件名**：GitHub Releases 上传的安装包资产名修正为 `面试点评器_安装程序_v2.7.0.exe`（此前上传后显示为乱码短名），上传脚本改为显式指定 ASCII 安全的资产名并校验返回的 `name` 字段。
+- **Release 资产文件名**：GitHub Release 会把非 ASCII 资产名 sanitize 成 `_._v2.6.0.exe` 这类乱码短名（API 重命名亦被过滤，只有 ASCII 名能原样保留），故 v2.7.0 安装包资产统一命名为 `InterviewLiveNote_Setup_<版本>.exe`（本地构建产物仍为 `面试点评器_安装程序_<版本>.exe`，installer 内部程序名与快捷方式名不变），v2.6.0 旧资产已同步改名为 `InterviewLiveNote_Setup_v2.6.0.exe`；README「下载安装」段同步说明下载文件名与安装后程序名的差异。
 
 ### 验证
 - 绿色版实测（PyInstaller onedir）：`/api/appinfo` 返回 `version=2.7.0`、`frozen=true`、`project_url` 正确；`/api/bank/template` 200 / 13048 字节；`/api/mobile/qrcode.png` 200 / image/png；`/api/mobile/info` 的 `https.enabled=true`、证书 `cert_days_left` 正常；`/api/update/check` 返回 `ok=true`、`current=2.7.0`。
