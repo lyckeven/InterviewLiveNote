@@ -19,6 +19,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed, wait, FIRST_COM
 import traceback
 import difflib
 import zipfile
+import urllib.parse
 from datetime import datetime
 from xml.etree import ElementTree as ET
 
@@ -28,7 +29,7 @@ import requests
 
 APP_NAME = "面试点评器"
 APP_AUTHOR = "慕夕制作"
-APP_VERSION = "2.6.0"
+APP_VERSION = "2.7.0"
 IS_FROZEN = bool(getattr(sys, "frozen", False))
 
 # ---- 项目地址与更新检查（设置 → 关于 → 检查更新）----
@@ -4543,8 +4544,45 @@ def _split_bank_blocks(text):
     return [b for b in blocks if b.strip()]
 
 
+def _parse_bank_json(text):
+    """解析 JSON 题库：题目数组，或含 items 数组的对象（即 templates\\题库模板.json 的结构）。
+    只保留 question 非空的对象，字段按题库条目口径归一；不是合法 JSON 或没有题目时返回 []"""
+    try:
+        data = json.loads(text)
+    except Exception:
+        return []
+    if isinstance(data, dict):
+        data = data.get("items") or data.get("questions") or data.get("list") or []
+    if not isinstance(data, list):
+        return []
+    out = []
+    for it in data:
+        if not isinstance(it, dict):
+            continue
+        q = str(it.get("question") or "").strip()
+        if not q:
+            continue
+        out.append({
+            "question": q,
+            "qtype": str(it.get("qtype") or "").strip(),
+            "qtype_reason": str(it.get("qtype_reason") or "").strip(),
+            "exam": _as_str_list(it.get("exam")),
+            "structure": _as_stage_list(it.get("structure")),
+            "keys": _as_str_list(it.get("keys")),
+            "ref": str(it.get("ref") or "").strip(),
+            "source": str(it.get("source") or "").strip(),
+        })
+    return out
+
+
 def _parse_bank_text(text: str):
-    """把纯文本 / Word 提取出的文本解析成 [{question, qtype, exam, structure, keys, ref}]"""
+    """把纯文本 / Word 提取出的文本 / JSON（题目数组或含 items 的对象）解析成
+    [{question, qtype, qtype_reason, exam, structure, keys, ref, source}]"""
+    head = (text or "").lstrip("\ufeff \t\r\n")
+    if head[:1] in ("[", "{"):
+        json_items = _parse_bank_json(head)
+        if json_items:
+            return json_items
     if _pl_is_plain_fenbi(text):
         # 先于 _fb_norm_marks 判定：该函数会把「粉笔审题」改写成「【粉笔审题】」，
         # 改写后就看不出这是「无方括号字段标签」的陪练解析文档了
@@ -4675,7 +4713,7 @@ def _read_doc_text(path, ext, stat=None):
         return "\n".join(lines)
     if ext == ".pdf":
         return _read_pdf_text(path, stat)
-    if ext in (".txt", ".md", ".csv"):
+    if ext in (".txt", ".md", ".csv", ".json"):
         for enc in ("utf-8", "utf-8-sig", "gbk", "utf-16"):
             try:
                 with open(path, "r", encoding=enc) as f:
@@ -4687,7 +4725,7 @@ def _read_doc_text(path, ext, stat=None):
                 continue
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
             return f.read()
-    raise RuntimeError("仅支持 .docx / .pdf / .txt / .md / .csv；.doc 请先在 Word 中另存为 .docx（或导出 PDF）再导入")
+    raise RuntimeError("仅支持 .docx / .pdf / .txt / .md / .csv / .json；.doc 请先在 Word 中另存为 .docx（或导出 PDF）再导入")
 
 
 def _bank_path(fn):
@@ -4795,22 +4833,88 @@ def api_bank_load():
         return jsonify(json.load(f))
 
 
+BANK_TEMPLATE_FN = "题库模板.json"
+
+
+def _bank_template_path():
+    """题库导入模板的磁盘路径（源码态取仓库 templates\\，打包后取资源目录 templates\\）"""
+    return os.path.join(BASE, "templates", BANK_TEMPLATE_FN)
+
+
+def _bank_template_doc():
+    """返回模板 dict：优先读 templates\\题库模板.json；文件缺失时用最小内置模板兜底"""
+    path = _bank_template_path()
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, dict) and isinstance(data.get("items"), list):
+            return data
+    except Exception:
+        pass
+    return {
+        "name": "题库模板",
+        "_填写说明": {
+            "用途": "题库导入模板：按 items 数组逐题填写 question / qtype / qtype_reason / exam / structure / keys / ref / source 八个字段，"
+                    "然后在软件左栏「导入文本」里粘贴本文件全部内容导入（支持 .json 文件直接导入）。",
+            "参考库结构": "与 data\\bank 下题库一致：{name, items}，每题键为 question(题干) / qtype(题型) / qtype_reason(题型判定理由) / "
+                          "exam(审题拆解，字符串数组) / structure(答题结构，[{stage,label,points}]) / keys(分条要点，字符串数组) / ref(参考要点全文) / source(来源标记)",
+        },
+        "items": [
+            {
+                "question": "（示例）某地推行「落叶不扫」，有人认为留住了城市秋意，有人认为影响通行与卫生。你怎么看？",
+                "qtype": "社会现象",
+                "qtype_reason": "考点：社会现象-社会-综合问法；设问类型：谈看法类设问；难度：二级难度",
+                "exam": ["本题属于社会现象类题目，作答结构为表态、分析、对策、收束。"],
+                "structure": [{"stage": "提观点", "label": "辩证看待", "points": ["表态：辩证看待，关键在分级分类。"]}],
+                "keys": ["表态：辩证看待", "第一，明确分区标准", "第二，建立动态管理机制"],
+                "ref": "辩证看待……（此处填写参考要点全文）",
+                "source": "模板示例",
+            }
+        ],
+    }
+
+
+@app.route("/api/bank/template")
+def api_bank_template():
+    """下载题库导入模板（字段与 data\\bank 下真实题库一致）；?inline=1 时直接在页面里预览"""
+    doc = _bank_template_doc()
+    inline = str(request.args.get("inline") or "").strip() in ("1", "true", "yes")
+    body = json.dumps(doc, ensure_ascii=False, indent=2)
+    resp = Response(body + "\n", mimetype="application/json")
+    if not inline:
+        # 中文文件名按 RFC 5987 编码，避免浏览器把文件名变成乱码
+        fn_ascii = "bank_template.json"
+        fn_utf8 = urllib.parse.quote(BANK_TEMPLATE_FN)
+        resp.headers["Content-Disposition"] = (
+            "attachment; filename=%s; filename*=UTF-8''%s" % (fn_ascii, fn_utf8))
+    return resp
+
+
 @app.route("/api/bank/import", methods=["POST"])
 def api_bank_import():
     body = request.get_json(force=True, silent=True) or {}
-    name = (body.get("name") or "未命名题库").strip()
     text = body.get("text", "")
     if not text.strip():
         return jsonify({"ok": False, "msg": "内容为空"}), 400
-    if text.strip().startswith("["):
-        try:
-            items = json.loads(text)
-        except Exception as e:
-            return jsonify({"ok": False, "msg": f"JSON 解析失败: {e}"}), 400
+    head = text.lstrip("\ufeff \t\r\n")
+    name = (body.get("name") or "").strip()
+    if head[:1] in ("[", "{"):
+        items = _parse_bank_json(head)
+        if not items:
+            return jsonify({"ok": False, "msg": "JSON 解析失败或没有可用题目：需要题目数组，"
+                                                "或含 items 数组的对象（可点「下载模板」查看字段写法）"}), 400
+        if not name:
+            try:
+                d = json.loads(head)
+                if isinstance(d, dict):
+                    name = str(d.get("name") or "").strip()
+            except Exception:
+                pass
     else:
         items = _parse_bank_text(text)
     if not items:
         return jsonify({"ok": False, "msg": "未解析出题目"}), 400
+    name = name or "未命名题库"
     fn, items = _bank_write(name, items, merge=bool(body.get("merge", True)))
     return jsonify({"ok": True, "file": fn, "count": len(items), "items": items})
 
@@ -4825,7 +4929,7 @@ def api_bank_import_docx():
         if f is not None:
             raw_name = f.filename or "题库.docx"
             ext = os.path.splitext(raw_name)[1].lower()
-            if ext not in (".docx", ".pdf", ".txt", ".md", ".csv"):
+            if ext not in (".docx", ".pdf", ".txt", ".md", ".csv", ".json"):
                 return jsonify({"ok": False, "msg": ".doc 老格式不支持，请在 Word 里另存为 .docx（或导出 PDF）再导入"}), 400
             name = (request.form.get("name") or os.path.splitext(os.path.basename(raw_name))[0]).strip()
             tmp = os.path.join(DATA, "_upload_" + uuid.uuid4().hex[:6] + ext)
@@ -4858,7 +4962,7 @@ def api_bank_import_docx():
         return jsonify({"ok": False, "msg": str(e)}), 500
 
 
-_BANK_IMPORT_EXT = (".docx", ".pdf", ".txt", ".md", ".csv")
+_BANK_IMPORT_EXT = (".docx", ".pdf", ".txt", ".md", ".csv", ".json")
 _BANK_IMPORT_MAX_FILES = 12
 _BANK_ANCHOR_HINT = ("没有识别到题目：每题需要以「第 N 题」开头（兼容「1.」「一、」「【考点】」等起始标记）；"
                      "粉笔解析类文档需含【考点】【粉笔审题】【解析示例】【备课要点】等标记")
