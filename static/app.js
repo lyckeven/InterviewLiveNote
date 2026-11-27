@@ -2960,6 +2960,19 @@ $('#bankPickFilter').addEventListener('input', (e) => renderBankPicker(e.target.
 
 /* 导入（文本 / JSON） */
 $('#btnImport').addEventListener('click', () => openModal('#modalImport'));
+// 下载题库模板：走同源接口拿 templates\题库模板.json（字段与 data\bank 下真实题库一致）
+$('#btnBankTpl') && $('#btnBankTpl').addEventListener('click', () => {
+  try {
+    const a = document.createElement('a');
+    a.href = '/api/bank/template';
+    a.download = '题库模板.json';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    toast('已开始下载 题库模板.json');
+  } catch (e) { toast('下载失败：' + e.message, true); }
+});
 $('#btnDoImport').addEventListener('click', async () => {
   try {
     const r = await api('/api/bank/import', { name: $('#bankName').value || '未命名题库', text: $('#bankText').value });
