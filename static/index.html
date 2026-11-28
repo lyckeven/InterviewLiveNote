@@ -11,7 +11,7 @@
 <div class="apptitlebar" id="appTitleBar">
   <span class="atb-logo" aria-hidden="true">面</span>
   <span class="atb-name">面试点评器</span>
-  <span class="atb-sub">v2.7.0 · 慕夕制作</span>
+  <span class="atb-sub">v2.8.0 · 慕夕制作</span>
   <span class="atb-drag" id="atbDrag" title="按住拖动窗口，双击最大化/还原"></span>
   <span class="atb-btns">
     <button class="atb-btn" id="btnWinMin" title="最小化" aria-label="最小化"><svg viewBox="0 0 12 12"><path d="M2 6h8"/></svg></button>
@@ -35,7 +35,7 @@
 <header class="topbar">
   <div class="brand">
     <span class="dot" id="statusDot"></span>
-    <span class="title">面试点评器</span><span class="ver">v2.7.0 · 慕夕制作</span>
+    <span class="title">面试点评器</span><span class="ver">v2.8.0 · 慕夕制作</span>
     <span class="state" id="stateText">待机</span>
   </div>
 
@@ -465,6 +465,7 @@
     <div class="set-tabs">
       <button class="set-tab active" data-tab="basic">基础设置</button>
       <button class="set-tab" data-tab="qtype">题型结构管理</button>
+      <button class="set-tab" data-tab="adapt">本地适配规则</button>
     </div>
     <div class="modal-body" id="setPaneBasic">
       <label class="lbl">接口地址 base_url</label>
@@ -534,7 +535,7 @@
       <p class="tip" id="logSizeTip"></p>
       <div class="divider">关于</div>
       <div class="about" id="aboutBox">
-        <div><b>面试点评器</b> v2.7.0</div>
+        <div><b>面试点评器</b> v2.8.0</div>
         <div>作者：<b>慕夕制作</b></div>
         <div class="about-row">
           <span>项目地址：<a href="#" class="lnk" id="linkProject" title="在浏览器中打开项目主页">github.com/lyckeven/InterviewLiveNote</a></span>
@@ -607,6 +608,46 @@
     </div>
   </div>
 </div>
+
+    <!-- 本地功能适配更新：题目识别 / 答题框架 / 点评方式 / 文字处理 规则可独立更新 -->
+    <div class="modal-body hidden" id="setPaneAdapt">
+      <div class="set-row">
+        <div class="set-row-main">
+          <div class="set-row-title">当前适配规则 <span class="adp-badge" id="adpVer">读取中…</span></div>
+          <div class="set-row-path" id="adpMeta">--</div>
+        </div>
+        <button id="btnAdpReload" class="btn ghost" type="button" title="规则文件已替换或拷贝进来时，点一下即可生效">重新加载</button>
+      </div>
+      <p class="tip">题目识别规则、答题框架、点评方式、文字处理词表都收在这一版规则里。以后只导入新的规则包就能生效，不需要重新安装软件。</p>
+
+      <div class="divider">规则分节</div>
+      <div class="adp-secs" id="adpSections"><div class="tip">加载中…</div></div>
+
+      <div class="divider">规则包</div>
+      <div class="set-row">
+        <div class="set-row-main">
+          <div class="set-row-title">导入 / 导出</div>
+          <div class="set-row-path">支持整包 zip，也支持单节 json（题目识别 / 答题框架 / 点评方式 / 段落识别 / 文字处理 / 笔记取题 / 真题条目）</div>
+        </div>
+        <button id="btnAdpImport" class="btn primary" type="button" title="导入新规则包，导入后立即生效">导入规则包</button>
+        <button id="btnAdpExport" class="btn ghost" type="button" title="导出当前生效规则，可拷到别的电脑导入">导出</button>
+        <button id="btnAdpReset" class="btn ghost" type="button" title="丢弃用户导入的规则，回到随包内置版本">恢复内置</button>
+      </div>
+      <input type="file" id="adpFile" accept=".zip,.json" hidden />
+      <p class="tip" id="adpMsg"></p>
+
+      <div class="divider">从笔记里提取题目</div>
+      <textarea id="adpText" class="inp ta mono" rows="6" placeholder="把课堂笔记 / 题本 / 逐字稿粘进来，按当前适配规则抽出题干、出处、题型与答题结构"></textarea>
+      <div class="set-row">
+        <div class="set-row-main">
+          <div class="set-row-title">提取结果 <span class="adp-badge" id="adpCount">0 条</span></div>
+          <div class="set-row-path">这里只是先抽出来看，勾选后再点「存入题库」才真正入库</div>
+        </div>
+        <button id="btnAdpExtract" class="btn primary" type="button">开始提取</button>
+        <button id="btnAdpSave" class="btn ghost" type="button" title="把勾选的题目写入题库">存入题库</button>
+      </div>
+      <div class="adp-items" id="adpItems"></div>
+    </div>
 
 <!-- 开源许可弹层（第三方组件声明） -->
 <div class="modal" id="modalOss">
