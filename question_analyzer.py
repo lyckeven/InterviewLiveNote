@@ -10,6 +10,11 @@
 import json
 import re
 
+try:
+    import adapt_rules as _adapt     # 本地适配规则（题目识别/答题框架），热更新
+except Exception:                    # 适配模块缺失时退回纯内置规则
+    _adapt = None
+
 # ---------------- 题型识别 ----------------
 # (题型, 权重, 正则)：命中次数 × 权重 得分最高者胜出，同分按 _TYPE_ORDER 顺序取先
 _TYPE_RULES = [
@@ -283,6 +288,14 @@ def detect_qtype(q):
         n = len(re.findall(pat, q or ""))
         if n:
             hits[name] = n * weight
+    # 适配规则包的题目识别规则：四步判别命中给硬分，题型关键词按权重加分
+    if _adapt is not None:
+        try:
+            for name, add in (_adapt.detect_bonus(q) or {}).items():
+                if name in _TYPE_ORDER:
+                    hits[name] = hits.get(name, 0) + float(add)
+        except Exception:
+            pass
     best, best_score = "", 0
     for name in _TYPE_ORDER:
         score = hits.get(name, 0)
@@ -514,7 +527,7 @@ def _structure(ctx, stages=None, stage_defs=None):
             for p in d["points"]:
                 pts.append(_fmt(p, ctx))
             out.append({"stage": d["name"], "label": d["what"][:24], "points": pts})
-        return out
+        return _merge_adapt_points(out, ctx["qtype"], [d["name"] for d in defs])
 
     order = stage_order(stages)
     tpl = _TPL.get(ctx["qtype"]) or _TPL["综合分析"]
@@ -534,8 +547,8 @@ def _structure(ctx, stages=None, stage_defs=None):
                 mapped.append({"stage": st, "label": hit["label"], "points": list(hit["points"])})
             else:
                 mapped.append({"stage": st, "label": "", "points": []})
-        return mapped
-    return base
+        return _merge_adapt_points(mapped, ctx["qtype"], order)
+    return _merge_adapt_points(base, ctx["qtype"], order)
 
 
 def _key_points(ctx):
@@ -673,7 +686,7 @@ def _pad_structure(structure, qtype, stages=None, stage_defs=None):
     out = []
     for st in order:
         if st in given:
-            out.append(given[st])
+            out.append(dict(given[st]))
             continue
         d = defs.get(st)
         if d:
@@ -691,7 +704,51 @@ def _pad_structure(structure, qtype, stages=None, stage_defs=None):
                 out.append({"stage": st, "label": tlabel, "points": list(tpoints or [])})
                 break
     extra = [s for st, s in given.items() if st not in order]
+    out = _merge_adapt_points(out, qtype, order)
     return (out + extra)[:8]
+
+
+def _merge_adapt_points(structure, qtype, order=None):
+    """把适配规则包里该题型的框架要点补进各环节（已有的不重复，每环节最多补 6 条）"""
+    if _adapt is None or not structure:
+        return structure
+    try:
+        addons = _adapt.stage_point_addons(qtype, order or [s.get("stage") for s in structure])
+    except Exception:
+        return structure
+    if not addons:
+        return structure
+    for item in structure:
+        st = str(item.get("stage") or "").strip()
+        extra = addons.get(st) or []
+        if not extra:
+            continue
+        pts = list(item.get("points") or [])
+        added = 0
+        for p in extra:
+            p = str(p or "").strip()
+            if not p or p in pts:
+                continue
+            if any(p in x or x in p for x in pts):
+                continue
+            pts.append(p)
+            added += 1
+            if added >= 6:
+                break
+        item["points"] = pts
+        if added:
+            item["adapt"] = True
+    return structure
+
+
+def adapt_hints(qtype, limit=6):
+    """该题型的框架提示（环节结构 + 说明），供解析卡与 AI 提示词引用"""
+    if _adapt is None:
+        return []
+    try:
+        return (_adapt.framework_notes(qtype) or [])[:limit]
+    except Exception:
+        return []
 
 
 def merge_ai(text, raw, qtype_name="", stages=None, stage_defs=None,
