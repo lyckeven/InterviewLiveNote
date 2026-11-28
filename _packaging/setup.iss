@@ -1,7 +1,7 @@
 ; 面试点评器 Inno Setup 安装脚本
 ; 作者：慕夕制作
 #define MyAppName "面试点评器"
-#define MyAppVersion "2.7.0"
+#define MyAppVersion "2.8.0"
 #define MyAppPublisher "慕夕制作"
 #define MyAppExeName "面试点评器.exe"
 #ifndef SrcDir
@@ -24,7 +24,7 @@ DisableProgramGroupPage=yes
 AllowNoIcons=yes
 PrivilegesRequired=lowest
 OutputDir={#OutputDir}
-OutputBaseFilename=面试点评器_安装程序_v2.7.0
+OutputBaseFilename=面试点评器_安装程序_v2.8.0
 SetupIconFile=app.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallDisplayName={#MyAppName} {#MyAppVersion}
@@ -33,7 +33,7 @@ SolidCompression=yes
 WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-VersionInfoVersion=2.7.0.0
+VersionInfoVersion=2.8.0.0
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#MyAppName} 安装程序
 VersionInfoCopyright=版权所有 (C) 2026 {#MyAppPublisher}
