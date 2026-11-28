@@ -15,6 +15,8 @@ datas = [
     (os.path.join(PROJ, "static"), "static"),
     # 题库导入模板（软件内「导入文本 → 下载模板」读取该目录）
     (os.path.join(PROJ, "templates"), "templates"),
+    # 本地功能适配规则包（题目识别/答题框架/点评方式/文字处理，可独立热更新）
+    (os.path.join(PROJ, "adapt"), "adapt"),
     (os.path.join(PKG, "default_data"), "default_data"),
     (os.path.join(PKG, "app.ico"), "."),
     # 开源合规：第三方组件声明清单 + 许可证全文（Apache-2.0/BSD-3-Clause/MIT/MPL-2.0/AGPL-3.0/0BSD/Zlib）
