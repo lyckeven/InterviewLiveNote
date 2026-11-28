@@ -224,3 +224,22 @@
 - 模板回环：用模板示例题 `POST /api/bank/import` 入库成功（2 题），确认字段与真实题库一致后清理测试数据。
 
 ---
+
+---
+
+## [2.8.0] - 2026-11-28
+
+### Added
+- **本地功能适配更新机制**：新增 `adapt_rules.py` 与 `adapt/` 规则包。把「题目识别规则、题型答题框架、点评方式与常见问题、段落环节识别、文字处理词表、笔记取题规则、真题条目」全部抽成独立的 JSON 规则包，随包分发一份内置版本（`adapt/manifest.json` + 7 个分节文件），用户可单独导入新版规则包即时生效，**无需重新安装整个软件**。生效目录 `%LOCALAPPDATA%\InterviewReviewer\data\adapt\current`，导入前自动备份到 `backup`，历史包保留最近 5 个在 `packs`。
+- **规则包校验与接口**：`boot()` / `status()` / `section()` / `reload()` / `import_pack()` / `reset()` / `export_pack()`；`GET /api/adapt/status`（版本、来源、各分节条数）、`GET /api/adapt/section?name=`（单节内容）、`POST /api/adapt/reload`、`POST /api/adapt/import`（zip 上传）、`GET /api/adapt/export`、`POST /api/adapt/reset`、`GET /api/adapt/framework?qtype=`、`GET /api/adapt/comment` 等。安全约束：白名单分节文件、单文件 ≤4MB、总解压 ≤32MB、zip 条目 ≤2000、拒绝绝对路径与 `../` 越界、正则预编译校验，任一校验失败整包拒绝。
+- **笔记一键取题**：`POST /api/adapt/extract` 按适配的 `bank_parse` 规则从笔记/题本/逐字稿里抽题（题干 + 出处 + 题型 + 答题结构 + 参考答案），前端「设置 → 本地适配规则 → 从笔记取题」粘贴文本即可预览、勾选，`POST /api/adapt/bank_import` 批量入库。
+- **设置面板第三页「本地适配规则」**：`static/index.html` 新增 `#setPaneAdapt`，与「基础 / 题型」并列；`static/app.js` 新增 `adpInit()` / `adpLoad()` / `adpRenderSections()` / `adpImport()` / `adpRenderItems()`，支持查看当前规则包版本与各分节条数、导入 `.zip` 规则包、导出当前规则、恢复内置、重新加载、粘贴笔记取题并勾选入库；`static/style.css` 补齐对应样式。
+
+### Changed
+- **本地解析 / 点评 / 文字处理全部改为读适配规则**：`question_analyzer.py`（题型判定取值、题型别名、题干预清洗、关键词加分改由 `detect_bonus()` 提供，低于阈值不判型）、`local_analyzer.py`（填空题、结构词、环节名走规则）、`corrector.py`（本地纠错词表 `fix_pairs()`、口头禅 `filler_words()`）、`paragraphizer.py`（环节标签走 `segment_rules()`）、`server.py`（`boot()` 启动同步内置规则、新增 8 个 `/api/adapt/*` 接口）。
+- **版式**：`_packaging/interview_reviewer.spec` 的 `datas` 收录 `adapt` 目录，绿色版与安装包均随包携带内置规则包。
+- **版本**：`server.py`、`launcher.py` 的 `APP_VERSION="2.8.0"`；`static/index.html` 三处版本标识升至 v2.8.0；`_packaging/version_info.txt` filevers/prodvers=(2,8,0,0)、FileVersion='2.8.0.0'、ProductVersion='2.8.0'；`_packaging/setup.iss` MyAppVersion "2.8.0"、OutputBaseFilename=面试点评器_安装程序_v2.8.0、VersionInfoVersion=2.8.0.0。
+
+### 验证
+- 规则包热更新实测：`GET /api/adapt/status` 初值 `version=2026.11.28, source=builtin`；导出 → 改 manifest 版本为 `2026.12.01` → `POST /api/adapt/import` 成功 → status 变为 `2026.12.01`、`has_user_pack=true`、`packs=1`；`POST /api/adapt/reset` 回到 `2026.11.28/builtin`。
+- 取题实测：对 20 份笔记/题本共抽出 597 条，其中《2026年结构化新人培训题本（题干版+出处）》抽出 42 条，出处与答题结构自动补齐；`POST /api/adapt/bank_import` 入新建题库成功。
