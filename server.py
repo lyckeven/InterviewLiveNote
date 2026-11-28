@@ -29,7 +29,7 @@ import requests
 
 APP_NAME = "面试点评器"
 APP_AUTHOR = "慕夕制作"
-APP_VERSION = "2.7.0"
+APP_VERSION = "2.8.0"
 IS_FROZEN = bool(getattr(sys, "frozen", False))
 
 # ---- 项目地址与更新检查（设置 → 关于 → 检查更新）----
@@ -80,6 +80,7 @@ import points_extract as poi              # noqa: E402
 import cert_util                          # noqa: E402  (手机端 HTTPS 自签证书)
 import log_util                            # noqa: E402  (统一日志：文件+控制台)
 import firewall_util                       # noqa: E402  (防火墙一键放行：手机端接入)
+import adapt_rules                        # noqa: E402  (本地功能适配规则：题目识别/框架/点评/文字处理，可热更新)
 from log_util import get_logger            # noqa: E402
 
 # 模块级 logger：所有后端日志写 %LOCALAPPDATA%\InterviewReviewer\logs\app-YYYYMMDD.log
@@ -95,6 +96,13 @@ REC_DIR = os.path.join(DATA, "records")
 BANK_DIR = os.path.join(DATA, "bank")
 for d in (DATA, REC_DIR, BANK_DIR):
     os.makedirs(d, exist_ok=True)
+
+# 本地功能适配规则：首启动把随包内置的一版同步到用户目录，之后只更新规则包即可生效
+_adapt_info = {}
+try:
+    _adapt_info = adapt_rules.boot() or {}
+except Exception as _e:                     # 规则包坏了也不能拦住软件启动
+    log.warning("适配规则初始化失败：%s", _e)
 
 CFG_PATH = os.path.join(DATA, "config.json")
 SESSION_PATH = os.path.join(DATA, "session_current.json")
@@ -4826,7 +4834,10 @@ def api_bank():
 
 @app.route("/api/bank/load")
 def api_bank_load():
-    path = _bank_path(request.args.get("file", ""))
+    fn = (request.args.get("file") or "").strip()
+    if not fn:
+        return jsonify({"ok": False, "msg": "缺少题库文件名"}), 400
+    path = _bank_path(fn)
     if not os.path.exists(path):
         return jsonify({"ok": False, "msg": "题库不存在"}), 404
     with open(path, "r", encoding="utf-8") as f:
@@ -6710,6 +6721,154 @@ def _transcript_lines():
     return lines
 
 
+# ---------------------------------------------------------------------------
+# 本地功能适配更新：题库解析 / 答题框架 / 点评方式 / 文字处理 的规则热更新
+# ---------------------------------------------------------------------------
+@app.route("/api/adapt/status")
+def api_adapt_status():
+    """当前生效的适配规则：版本、来源、各节条目数、内置与用户目录位置"""
+    st = adapt_rules.status()
+    st["ok"] = True
+    st["builtin_dir"] = adapt_rules.BUILTIN_DIR
+    st["current_dir"] = adapt_rules.CURRENT_DIR
+    return jsonify(st)
+
+
+@app.route("/api/adapt/reload", methods=["POST"])
+def api_adapt_reload():
+    """手动重载：把新规则文件直接拷进 current 目录后点一下即可生效"""
+    adapt_rules.reload()
+    st = adapt_rules.status()
+    st["ok"] = True
+    return jsonify(st)
+
+
+@app.route("/api/adapt/section")
+def api_adapt_section():
+    """查看某一节的规则内容（前端展示用）"""
+    name = (request.args.get("name") or "").strip()
+    if name not in adapt_rules.SECTION_FILES:
+        return jsonify({"ok": False, "msg": "未知规则分节：%s" % name}), 400
+    return jsonify({"ok": True, "name": name,
+                    "label": adapt_rules.SECTION_LABEL.get(name, name),
+                    "data": adapt_rules.section(name)})
+
+
+@app.route("/api/adapt/import", methods=["POST"])
+def api_adapt_import():
+    """导入适配规则包：zip 整包 / 单节 json（上传文件、粘贴 JSON 文本、给本机路径三种方式）"""
+    data, filename = None, "adapt_pack.zip"
+    f = request.files.get("file") if request.files else None
+    if f is not None and f.filename:
+        data = f.read()
+        filename = f.filename
+    else:
+        body = request.get_json(force=True, silent=True) or {}
+        raw = body.get("text")
+        path = (body.get("path") or "").strip()
+        if raw:
+            data = str(raw).encode("utf-8")
+        elif path:
+            if not os.path.isfile(path):
+                return jsonify({"ok": False, "msg": "文件不存在：%s" % path}), 400
+            filename = os.path.basename(path)
+            with open(path, "rb") as fp:
+                data = fp.read()
+    if not data:
+        return jsonify({"ok": False, "msg": "没有拿到规则包内容"}), 400
+    try:
+        st = adapt_rules.import_pack(data, filename, origin="ui")
+    except adapt_rules.AdaptError as e:
+        return jsonify({"ok": False, "msg": str(e)}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "msg": "导入失败：%s" % e}), 500
+    st["ok"] = True
+    return jsonify(st)
+
+
+@app.route("/api/adapt/export")
+def api_adapt_export():
+    """导出当前生效规则为 zip，可拷到另一台电脑导入"""
+    data = adapt_rules.export_pack()
+    fn = "adapt_pack_%s.zip" % time.strftime("%Y%m%d")
+    return Response(data, mimetype="application/zip",
+                    headers={"Content-Disposition": "attachment; filename=%s" % fn})
+
+
+@app.route("/api/adapt/reset", methods=["POST"])
+def api_adapt_reset():
+    """丢弃用户规则，回到随包内置版本"""
+    try:
+        st = adapt_rules.reset()
+    except adapt_rules.AdaptError as e:
+        return jsonify({"ok": False, "msg": str(e)}), 400
+    st["ok"] = True
+    return jsonify(st)
+
+
+@app.route("/api/adapt/extract", methods=["POST"])
+def api_adapt_extract():
+    """从粘贴的笔记 / 题本文字里按适配规则提取题目（含题型、答题结构、参考要点）"""
+    body = request.get_json(force=True, silent=True) or {}
+    text = body.get("text") or ""
+    path = (body.get("path") or "").strip()
+    if not text and path:
+        if not os.path.isfile(path):
+            return jsonify({"ok": False, "msg": "文件不存在：%s" % path}), 400
+        try:
+            with open(path, "r", encoding="utf-8-sig") as fp:
+                text = fp.read()
+        except Exception as e:
+            return jsonify({"ok": False, "msg": "读取失败：%s" % e}), 400
+    text = str(text or "")
+    if not text.strip():
+        return jsonify({"ok": False, "msg": "没有可解析的文字"}), 400
+    if len(text) > 2 * 1024 * 1024:
+        text = text[: 2 * 1024 * 1024]
+    qtype = str(body.get("qtype") or "").strip()
+    items = adapt_rules.extract_questions(text, default_qtype=qtype,
+                                          source=os.path.basename(path) if path else "paste")
+    return jsonify({"ok": True, "count": len(items), "items": items[:300]})
+
+
+@app.route("/api/adapt/bank_import", methods=["POST"])
+def api_adapt_bank_import():
+    """把（笔记里提取或适配包自带的）真题批量写入题库"""
+    body = request.get_json(force=True, silent=True) or {}
+    bank = (body.get("bank") or "").strip()
+    new_bank = (body.get("new_bank") or "").strip()
+    raw = body.get("items") or []
+    created = False
+    if new_bank:
+        bank, created = new_bank, True
+    if not bank:
+        return jsonify({"ok": False, "msg": "请选择题库或填写新题库名"}), 400
+    items, skipped = [], 0
+    for it in raw:
+        one = qa.normalize(it or {})
+        if not one or len(one.get("question") or "") < 4:
+            skipped += 1
+            continue
+        one["source"] = one.get("source") or "adapt_extract"
+        items.append(one)
+    if not items:
+        return jsonify({"ok": False, "msg": "没有可入库的题目"}), 400
+    with _lock:
+        fn, saved = _bank_write(bank, items, merge=not created)
+    return jsonify({"ok": True, "file": fn, "bank": os.path.splitext(fn)[0],
+                    "count": len(saved), "imported": len(items), "skipped": skipped,
+                    "created": created})
+
+
+@app.route("/api/adapt/framework")
+def api_adapt_framework():
+    """某题型的答题框架（笔记口径）：环节 + 环节要点 + 说明"""
+    qtype = (request.args.get("qtype") or "").strip()
+    fw = adapt_rules.framework(qtype)
+    return jsonify({"ok": True, "qtype": qtype, "framework": fw,
+                    "notes": adapt_rules.framework_notes(qtype)})
+
+
 @app.route("/api/review", methods=["POST"])
 def api_review():
     if not session["segments"]:
@@ -6724,7 +6883,8 @@ def api_review():
     cp, ft = _qtype_review_parts(session.get("qtype"))
     local_md, metrics = local_analyzer.analyze(
         session["question"], session["segments"], session["duration"], paras,
-        stages=stage_names, checkpoints=cp, faults=ft)
+        stages=stage_names, checkpoints=cp, faults=ft,
+        qtype=session.get("qtype") or "")
     mode, md, err = "local", local_md, ""
 
     if ai.public_config()["has_key"]:
