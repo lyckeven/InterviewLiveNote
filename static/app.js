@@ -5105,15 +5105,17 @@ function qtaMsg(t, bad) {
 }
 
 function qtaSetTab(tab) {
-  const q = (tab === 'qtype');
-  $$('.set-tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === (q ? 'qtype' : 'basic')));
-  const basic = $('#setPaneBasic');
-  const pane = $('#setPaneQtype');
-  if (basic) basic.classList.toggle('hidden', q);
-  if (pane) pane.classList.toggle('hidden', !q);
+  const panes = { basic: '#setPaneBasic', qtype: '#setPaneQtype', adapt: '#setPaneAdapt' };
+  const name = panes[tab] ? tab : 'basic';
+  $$('.set-tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
+  Object.keys(panes).forEach((k) => {
+    const el = $(panes[k]);
+    if (el) el.classList.toggle('hidden', k !== name);
+  });
   const box = $('#modalSettings .modal-box');
-  if (box) box.classList.toggle('xwide', q);
-  if (q) qtaInit();
+  if (box) box.classList.toggle('xwide', name !== 'basic');
+  if (name === 'qtype') qtaInit();
+  if (name === 'adapt') adpInit();
 }
 
 let QTA_READY = false;
@@ -7184,3 +7186,184 @@ if (document.readyState === 'loading') {
     }
   });
 })();
+
+/* ================= 本地适配规则：题目识别 / 答题框架 / 点评方式 / 文字处理 ================= */
+const ADP = { ready: false, st: null, items: [], picked: {} };
+
+function adpMsg(t, isErr) {
+  const el = $('#adpMsg');
+  if (el) { el.textContent = t || ''; el.className = 'tip' + (isErr ? ' err' : ''); }
+}
+
+async function adpInit(force) {
+  if (ADP.ready && !force) return;
+  try {
+    await adpLoad();
+    ADP.ready = true;
+  } catch (e) { adpMsg(e.message || '适配规则读取失败', true); }
+}
+
+async function adpLoad() {
+  const st = await api('/api/adapt/status');
+  ADP.st = st;
+  const m = st.manifest || {};
+  const ver = $('#adpVer');
+  if (ver) ver.textContent = m.version ? ('v' + m.version) : '未知版本';
+  const meta = $('#adpMeta');
+  if (meta) {
+    const src = (m.source && m.source !== 'builtin') || st.has_user_pack ? '用户导入' : '随包内置';
+    const at = m.imported_at || m.updated_at || '';
+    meta.textContent = [m.name || '适配规则', '来源：' + src]
+      .concat(at ? ['导入时间：' + at] : [])
+      .concat(m.imported_from ? ['文件：' + m.imported_from] : [])
+      .join(' · ');
+  }
+  adpRenderSections(st);
+}
+
+const ADP_DESC = {
+  question_detect: '按题干 / 设问特征判断题型，含易混题型区分',
+  frameworks: '各题型答题框架：环节 + 环节要点 + 变体',
+  comment_rules: '点评方式、常见问题与改进建议',
+  segment_rules: '逐字稿环节识别信号词与标签',
+  text_fix: '同音字 / 口误 / 口头禅等文字处理词表',
+  bank_parse: '从笔记 / 题本 / 逐字稿抽题的起止与分节规则',
+  bank_items: '真题条目（题干 + 题型 + 出处 + 结构）',
+};
+
+function adpRenderSections(st) {
+  const box = $('#adpSections');
+  if (!box) return;
+  const secs = Array.isArray(st.sections) ? st.sections : [];
+  if (!secs.length) { box.innerHTML = '<div class="tip">规则里没有可用分节</div>'; return; }
+  box.innerHTML = secs.map((one) => {
+    const n = one.count == null ? '--' : one.count;
+    const d = ADP_DESC[one.key] || one.file || '';
+    return '<div class="adp-sec">' +
+      '<div class="adp-sec-t">' + esc(one.label || one.key) + '</div>' +
+      '<div class="adp-sec-d">' + esc(d) + '</div>' +
+      '<span class="adp-badge">' + esc(String(n)) + ' 条</span>' +
+      '</div>';
+  }).join('');
+}
+
+async function adpImport(file) {
+  adpMsg('正在导入 ' + file.name + ' …');
+  const fd = new FormData();
+  fd.append('file', file);
+  const r = await fetch('/api/adapt/import', { method: 'POST', body: fd });
+  const j = await r.json().catch(() => ({ ok: false, msg: '导入失败 ' + r.status }));
+  if (!r.ok || j.ok === false) throw new Error(j.msg || '导入失败');
+  await adpLoad();
+  adpMsg('导入成功，已生效：' + (j.manifest && j.manifest.version ? 'v' + j.manifest.version : ''));
+  toast('适配规则已更新');
+}
+
+(function bindAdaptPanel() {
+  const btnReload = $('#btnAdpReload');
+  if (btnReload) btnReload.addEventListener('click', async () => {
+    try { const st = await api('/api/adapt/reload', {}); ADP.st = st; adpRenderSections(st); adpMsg('已重新加载'); toast('规则已重新加载'); }
+    catch (e) { adpMsg(e.message, true); }
+  });
+
+  const btnImp = $('#btnAdpImport');
+  const file = $('#adpFile');
+  if (btnImp && file) {
+    btnImp.addEventListener('click', () => file.click());
+    file.addEventListener('change', async () => {
+      const f = file.files && file.files[0];
+      file.value = '';
+      if (!f) return;
+      try { await adpImport(f); } catch (e) { adpMsg(e.message, true); }
+    });
+  }
+
+  const btnExp = $('#btnAdpExport');
+  if (btnExp) btnExp.addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.href = '/api/adapt/export';
+    a.download = 'adapt_pack.zip';
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+
+  const btnReset = $('#btnAdpReset');
+  if (btnReset) btnReset.addEventListener('click', async () => {
+    if (!confirm('确定丢弃已导入的适配规则，回到随包内置版本？')) return;
+    try { const st = await api('/api/adapt/reset', {}); ADP.st = st; adpRenderSections(st); adpMsg('已恢复内置规则'); toast('已恢复内置'); }
+    catch (e) { adpMsg(e.message, true); }
+  });
+
+  const btnEx = $('#btnAdpExtract');
+  if (btnEx) btnEx.addEventListener('click', async () => {
+    const text = ($('#adpText').value || '').trim();
+    if (text.length < 20) { adpMsg('先粘贴笔记或题本文字', true); return; }
+    btnEx.disabled = true;
+    const old = btnEx.textContent;
+    btnEx.textContent = '提取中…';
+    try {
+      const r = await api('/api/adapt/extract', { text: text });
+      ADP.items = r.items || [];
+      ADP.picked = {};
+      ADP.items.forEach((it, i) => { ADP.picked[i] = true; });
+      adpRenderItems();
+      adpMsg('按当前规则提取到 ' + r.count + ' 条');
+    } catch (e) { adpMsg(e.message, true); }
+    btnEx.disabled = false;
+    btnEx.textContent = old;
+  });
+
+  const btnSave = $('#btnAdpSave');
+  if (btnSave) btnSave.addEventListener('click', async () => {
+    const items = ADP.items.filter((it, i) => ADP.picked[i]);
+    if (!items.length) { adpMsg('没有勾选任何题目', true); return; }
+    const banks = (typeof BANKS !== 'undefined' && BANKS) || [];
+    let bank = '';
+    if (banks.length) {
+      bank = prompt('存入哪个题库？（填题库名，留空则新建）\n可选：' + banks.map((b) => b.name).join(' / '), banks[0].name) || '';
+      if (!bank) return;
+    } else {
+      bank = prompt('新建题库名：', '笔记取题') || '';
+      if (!bank) return;
+    }
+    btnSave.disabled = true;
+    try {
+      const r = await api('/api/adapt/bank_import', { new_bank: bank, items: items });
+      adpMsg('已入库 ' + r.count + ' 条 → ' + r.bank + (r.skipped ? ('，跳过 ' + r.skipped + ' 条') : ''));
+      toast('已存入题库');
+      if (typeof loadBanks === 'function') { try { loadBanks(); } catch (_) { } }
+    } catch (e) { adpMsg(e.message, true); }
+    btnSave.disabled = false;
+  });
+})();
+
+function adpRenderItems() {
+  const box = $('#adpItems');
+  const cnt = $('#adpCount');
+  const n = ADP.items.filter((it, i) => ADP.picked[i]).length;
+  if (cnt) cnt.textContent = n + ' / ' + ADP.items.length + ' 条';
+  if (!box) return;
+  if (!ADP.items.length) { box.innerHTML = ''; return; }
+  box.innerHTML = ADP.items.map((it, i) => {
+    const on = ADP.picked[i] ? ' checked' : '';
+    const q = (it.question || '').replace(/\s+/g, ' ');
+    const ex = (it.exam && it.exam[0]) ? it.exam[0] : '';
+    const st = (it.structure || []).map((x) => x.stage).filter(Boolean).join(' / ');
+    return '<label class="adp-item">' +
+      '<input type="checkbox" data-adp-idx="' + i + '"' + on + '>' +
+      '<span class="adp-item-main">' +
+        '<span class="adp-item-q">' + esc(q.length > 90 ? q.slice(0, 90) + '…' : q) + '</span>' +
+        '<span class="adp-item-m">' + esc([it.qtype || '未判题型', ex, st].filter(Boolean).join(' · ')) + '</span>' +
+      '</span>' +
+      '</label>';
+  }).join('');
+  if (!box._bound) {
+    box._bound = true;
+    box.addEventListener('change', (e) => {
+      const cb = e.target.closest('[data-adp-idx]');
+      if (!cb) return;
+      ADP.picked[+cb.dataset.adpIdx] = cb.checked;
+      adpRenderItems();
+    });
+  }
+}
+
