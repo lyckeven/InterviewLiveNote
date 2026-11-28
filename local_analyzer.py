@@ -10,6 +10,11 @@
 """
 import re
 
+try:
+    import adapt_rules as _adapt     # 本地适配规则（口头禅词表 / 题型高频问题），热更新
+except Exception:                    # 缺适配模块时退回内置词表
+    _adapt = None
+
 import paragraphizer as pz
 
 FILLERS = ["嗯", "呃", "啊", "那个", "这个", "就是说", "然后", "所以说", "对吧",
@@ -163,7 +168,7 @@ def _review_lines(paras, full, stages, checkpoints, faults):
 
 
 def analyze(question, segments, duration, paragraphs=None, stages=None,
-            checkpoints=None, faults=None):
+            checkpoints=None, faults=None, qtype=""):
     """本地规则点评
 
     stages      : 当前题目题型生效的答题环节；题型没有收尾类环节时不再强求「收束句」
@@ -178,9 +183,17 @@ def analyze(question, segments, duration, paragraphs=None, stages=None,
     dur = max(1, int(duration or (segments[-1]["t_end"] if segments else 1)))
     speed = round(n_chars / dur * 60)
 
-    # 口头禅
+    # 口头禅（适配规则包可热更新词表）
+    f_words = list(FILLERS)
+    if _adapt is not None:
+        try:
+            for w in (_adapt.filler_words() or []):
+                if w and w not in f_words:
+                    f_words.append(w)
+        except Exception:
+            pass
     fillers = {}
-    for w in FILLERS:
+    for w in f_words:
         c = full.count(w)
         if c:
             fillers[w] = c
@@ -411,6 +424,36 @@ def analyze(question, segments, duration, paragraphs=None, stages=None,
     if rev_lines:
         L.extend(rev_lines)
 
+    # 适配规则包里的「学员常见问题」：按题型列出笔记口径的对照清单
+    adapt_hit = []
+    if _adapt is not None and qtype:
+        try:
+            tips = _adapt.tips_for(qtype, limit=6) or []
+        except Exception:
+            tips = []
+        if tips:
+            L.append("## 五、本题型高频问题（笔记口径）")
+            L.append("")
+            L.append("> 来自适配规则包「点评方式与常见问题」，按「" + str(qtype) + "」题型的学员常见错误逐条对照本场作答。")
+            L.append("")
+            for t in tips:
+                prob = str(t.get("problem") or t.get("问题") or t.get("name") or "").strip()
+                show = str(t.get("show") or t.get("表现") or t.get("内容") or "").strip()
+                stage = str(t.get("stage") or t.get("环节") or "").strip()
+                advice = t.get("advice") or t.get("建议") or []
+                if isinstance(advice, str):
+                    advice = [advice]
+                advice = [str(a).strip() for a in advice if str(a or "").strip()]
+                if not (prob or show):
+                    continue
+                head = "**%s**" % (prob or show[:12])
+                if stage:
+                    head += "（%s）" % stage
+                L.append("- " + head + "：" + (show[:70] + ("…" if len(show) > 70 else "") if show else "见原笔记"))
+                if advice:
+                    L.append("  - 纠正方向：" + advice[0][:80])
+                adapt_hit.append(prob or show[:12])
+
     return "\n".join(L), {
         "score": _score(speed, f_rate, struct_hit, dur, long_pause),
         "speed": speed,
@@ -428,6 +471,7 @@ def analyze(question, segments, duration, paragraphs=None, stages=None,
         "checkpoint_hit": rev_metrics.get("checkpoint_hit") or {},
         "faults": [str(x).strip() for x in (faults or []) if str(x or "").strip()],
         "fault_hit": rev_metrics.get("fault_hit") or {},
+        "adapt_tips": adapt_hit,
     }
 
 
