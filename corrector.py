@@ -17,6 +17,11 @@
 import json
 import re
 
+try:
+    import adapt_rules as _adapt     # 本地适配规则（口误/错别字替换对），热更新
+except Exception:
+    _adapt = None
+
 # --------------------------------------------------------------------------
 # 一、本地纠错词典（同音字 / 形近字 / 成语误写）
 #     只收「错了就一定错」的写法，宁可少改也不能改错。
@@ -183,7 +188,19 @@ def correct_local(text):
         return text or "", []
     out = text
     changes = []
-    for wrong, right in _SORTED_PAIRS:
+    # 适配规则包的替换对优先（讲师按自己学员的口误习惯积累）
+    pairs = _SORTED_PAIRS
+    if _adapt is not None:
+        try:
+            extra = _adapt.fix_pairs() or []
+        except Exception:
+            extra = []
+        if extra:
+            seen = {w for w, _ in pairs}
+            add = [(str(w), str(r)) for w, r in extra if w and r and str(w) not in seen]
+            add.sort(key=lambda x: -len(x[0]))
+            pairs = add + list(pairs)
+    for wrong, right in pairs:
         if wrong in out:
             out = out.replace(wrong, right)
             changes.append({"from": wrong, "to": right,
