@@ -1,0 +1,19 @@
+{
+ "id": "fby-adapt-20261128",
+ "name": "粉笔体系适配规则包",
+ "version": "2026.11.28",
+ "author": "慕夕制作",
+ "scene": "公考结构化面试·粉笔体系",
+ "min_app_version": "2.8.0",
+ "built_at": "2026-11-28",
+ "note": "由《2026.11.06面试理论课基础知识汇总》《2026年结构化新人培训题本》《学员常见问题手册》《点评集中培训-社会现象》等笔记提炼。题目识别规则、答题框架、点评方式、笔记取题规则四类内容可独立更新，无需重装软件。",
+ "sections": [
+  "question_detect.json",
+  "frameworks.json",
+  "comment_rules.json",
+  "segment_rules.json",
+  "text_fix.json",
+  "bank_parse.json",
+  "bank_items.json"
+ ]
+}
