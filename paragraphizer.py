@@ -8,6 +8,11 @@
 每个段落记录 t_start / t_end，前端按「起-止」显示，AI 点评也以段落为单位。
 """
 import re
+
+try:
+    import adapt_rules as _adapt     # 本地适配规则（段落切分参数），热更新
+except Exception:
+    _adapt = None
 import uuid
 
 FILLER_STRIP = "，。！？、；：“”‘’（）《》…—,.!?;: \n\t"
@@ -40,7 +45,7 @@ def guess_title(text, fallback_idx=1):
     题型未配置环节时回退通用五环节（审题/提观点/重分析/抓落实/结尾）。
     """
     head = (text or "").strip()[:40]
-    for role, _sub, pat in TAG_RULES:
+    for role, _sub, pat in _tag_rules():
         if re.search(pat, head):
             try:
                 import simplifier as _simp
@@ -74,8 +79,49 @@ def new_para(idx, t_start):
     }
 
 
+def _tag_rules():
+    """环节识别正则：适配规则包（笔记口径）在前，内置兜底在后"""
+    rules = []
+    if _adapt is not None:
+        try:
+            for item in (_adapt.segment_rules() or []):
+                try:
+                    role, label, rx, src = item
+                except Exception:
+                    continue
+                if getattr(rx, "pattern", ""):
+                    rules.append((role, label or "", rx.pattern))
+        except Exception:
+            rules = []
+    seen = {(r, p) for r, _l, p in rules}
+    for role, label, pat in TAG_RULES:
+        if (role, pat) not in seen:
+            rules.append((role, label, pat))
+    return rules
+
+
+def _adapt_cfg(cfg):
+    """段落切分参数：调用方没给的就取适配规则包，仍未安排走内置默认"""
+    if not _adapt:
+        return cfg or {}
+    try:
+        rules = _adapt.section("segment_rules") or {}
+    except Exception:
+        return cfg or {}
+    if not isinstance(rules, dict):
+        return cfg or {}
+    out = dict(cfg or {})
+    for k in ("para_pause_gap", "para_max_sec", "para_max_chars"):
+        v = rules.get(k)
+        if v is None:
+            continue
+        out.setdefault(k, v)
+    return out
+
+
 def need_split(para, seg, cfg):
     """判断新句子是否应开启新段落"""
+    cfg = _adapt_cfg(cfg)
     if not para:
         return True
     gap = float(seg.get("t_start") or 0) - float(para.get("t_end") or 0)
